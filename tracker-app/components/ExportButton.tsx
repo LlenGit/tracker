@@ -2,7 +2,7 @@
 import { Download } from 'lucide-react'
 
 interface Props {
-  table: 'calls' | 'messages' | 'site_visits' | 'activities'
+  table: 'calls' | 'messages' | 'site_visits' | 'activities' | 'glen_portals' | 'glen_tickets' | 'glen_sites'
   label?: string
 }
 
