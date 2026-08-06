@@ -1,7 +1,8 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { Plus, Trash2, Phone, Loader2, Link as LinkIcon } from 'lucide-react'
+import { useEffect, useState, useRef } from 'react'
+import { Plus, Trash2, Phone, Loader2, Upload, Play, Pause } from 'lucide-react'
 import ExportButton from '@/components/ExportButton'
+import { supabase } from '@/lib/supabase'
 import type { Call } from '@/lib/supabase'
 
 const EMPTY: Omit<Call, 'id' | 'created_at'> = {
@@ -9,12 +10,35 @@ const EMPTY: Omit<Call, 'id' | 'created_at'> = {
   time: '', duration_min: undefined, engineer_name: '', notes: '', recording_url: '', tags: '',
 }
 
+function AudioPlayer({ url }: { url: string }) {
+  const [playing, setPlaying] = useState(false)
+  const ref = useRef<HTMLAudioElement>(null)
+
+  const toggle = () => {
+    if (!ref.current) return
+    if (playing) { ref.current.pause(); setPlaying(false) }
+    else { ref.current.play(); setPlaying(true) }
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      <audio ref={ref} src={url} onEnded={() => setPlaying(false)} preload="none" />
+      <button onClick={toggle} className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs font-medium">
+        {playing ? <Pause size={13} /> : <Play size={13} />}
+        {playing ? 'Pause' : 'Play'}
+      </button>
+    </div>
+  )
+}
+
 export default function CallsPage() {
   const [calls, setCalls] = useState<Call[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ ...EMPTY })
+  const [audioFile, setAudioFile] = useState<File | null>(null)
 
   const load = async () => {
     setLoading(true)
@@ -27,13 +51,33 @@ export default function CallsPage() {
 
   const set = (k: string, v: unknown) => setForm(f => ({ ...f, [k]: v }))
 
+  const uploadAudio = async (file: File): Promise<string> => {
+    const ext = file.name.split('.').pop()
+    const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    const { error } = await supabase.storage.from('recordings').upload(path, file, { upsert: false })
+    if (error) throw error
+    const { data } = supabase.storage.from('recordings').getPublicUrl(path)
+    return data.publicUrl
+  }
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
-    await fetch('/api/calls', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+    let url = form.recording_url
+    if (audioFile) {
+      setUploading(true)
+      try { url = await uploadAudio(audioFile) } catch { alert('Audio upload failed — check your Supabase Storage bucket.') }
+      setUploading(false)
+    }
+    await fetch('/api/calls', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...form, recording_url: url }),
+    })
     setSaving(false)
     setShowForm(false)
     setForm({ ...EMPTY })
+    setAudioFile(null)
     load()
   }
 
@@ -69,12 +113,28 @@ export default function CallsPage() {
             <div><label className="label">Time</label><input type="time" className="input" value={form.time} onChange={e => set('time', e.target.value)} /></div>
             <div><label className="label">Duration (min)</label><input type="number" min={0} className="input" value={form.duration_min ?? ''} onChange={e => set('duration_min', e.target.value ? parseInt(e.target.value) : undefined)} /></div>
             <div><label className="label">Engineer Name</label><input className="input" value={form.engineer_name} onChange={e => set('engineer_name', e.target.value)} /></div>
-            <div><label className="label">Recording URL</label><input type="url" className="input" placeholder="https://..." value={form.recording_url} onChange={e => set('recording_url', e.target.value)} /></div>
+            <div>
+              <label className="label">Recording (audio file)</label>
+              <label className="input flex items-center gap-2 cursor-pointer text-gray-500 hover:bg-gray-50">
+                <Upload size={14} />
+                {audioFile ? audioFile.name : 'Choose MP3, WAV, M4A…'}
+                <input
+                  type="file"
+                  accept="audio/*"
+                  className="hidden"
+                  onChange={e => setAudioFile(e.target.files?.[0] ?? null)}
+                />
+              </label>
+              {audioFile && (
+                <button type="button" onClick={() => setAudioFile(null)} className="text-xs text-red-400 mt-1 hover:text-red-600">Remove</button>
+              )}
+            </div>
             <div><label className="label">Tags (comma-separated)</label><input className="input" placeholder="important, follow-up" value={form.tags} onChange={e => set('tags', e.target.value)} /></div>
             <div className="md:col-span-3"><label className="label">Notes</label><textarea rows={3} className="input" value={form.notes} onChange={e => set('notes', e.target.value)} /></div>
           </div>
-          <div className="flex gap-2 justify-end">
-            <button type="button" onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
+          <div className="flex gap-2 justify-end items-center">
+            {uploading && <span className="text-xs text-gray-400 flex items-center gap-1"><Loader2 size={12} className="animate-spin" />Uploading audio…</span>}
+            <button type="button" onClick={() => { setShowForm(false); setAudioFile(null) }} className="btn-secondary">Cancel</button>
             <button type="submit" disabled={saving} className="btn-primary flex items-center gap-2">
               {saving && <Loader2 size={14} className="animate-spin" />} Save Call
             </button>
@@ -106,9 +166,7 @@ export default function CallsPage() {
                   <td className="table-td">{c.duration_min != null ? `${c.duration_min} min` : '—'}</td>
                   <td className="table-td max-w-xs truncate">{c.notes ?? '—'}</td>
                   <td className="table-td">
-                    {c.recording_url
-                      ? <a href={c.recording_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-1"><LinkIcon size={12} />Link</a>
-                      : '—'}
+                    {c.recording_url ? <AudioPlayer url={c.recording_url} /> : '—'}
                   </td>
                   <td className="table-td">
                     <button onClick={() => del(c.id!)} className="text-red-400 hover:text-red-600 transition-colors">
