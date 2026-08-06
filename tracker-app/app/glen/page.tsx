@@ -37,15 +37,15 @@ const PRIORITY_BADGE: Record<string, string> = {
   'Low':      'bg-gray-100 text-gray-600',
 }
 const ISSUE_SEVERITY: Record<string, string> = {
-  'Data Not Upload': '🔴',
-  'Device Offline':  '🔴',
-  'Power Shutdown':  '🔴',
-  'Value Mismatch':  '🟠',
-  'Analyzer Issue':  '🟠',
-  'Data Showing NA': '🟡',
-  'IP Change':       '🟡',
-  'New Site Config': '🟢',
-  'Other':           '🟢',
+  'Data Not Upload': 'bg-red-400',
+  'Device Offline':  'bg-red-400',
+  'Power Shutdown':  'bg-red-400',
+  'Value Mismatch':  'bg-orange-400',
+  'Analyzer Issue':  'bg-orange-400',
+  'Data Showing NA': 'bg-yellow-400',
+  'IP Change':       'bg-yellow-400',
+  'New Site Config': 'bg-green-400',
+  'Other':           'bg-green-400',
 }
 
 function timeAgo(iso: string) {
@@ -171,7 +171,7 @@ export default function GlenHubPage() {
                   return (
                     <div key={type}>
                       <div className="flex justify-between text-xs mb-1">
-                        <span className="text-gray-700">{ISSUE_SEVERITY[type] ?? '⚪'} {type}</span>
+                        <span className="text-gray-700 flex items-center gap-1.5"><span className={`inline-block w-2 h-2 rounded-full ${ISSUE_SEVERITY[type] ?? 'bg-gray-300'}`} />{type}</span>
                         <span className="text-gray-500 font-medium">{count} <span className="text-gray-400">({pct}%)</span></span>
                       </div>
                       <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">

@@ -219,12 +219,12 @@ export default function DashboardPage() {
           <SectionHeader title="Open Priorities" />
           <div className="flex flex-col gap-3 mt-1">
             {[
-              { key: 'high',   label: 'High',   icon: '🔴', bg: 'bg-red-50 border-red-100' },
-              { key: 'medium', label: 'Medium', icon: '🟠', bg: 'bg-orange-50 border-orange-100' },
-              { key: 'low',    label: 'Low',    icon: '⚪', bg: 'bg-gray-50 border-gray-100' },
-            ].map(({ key, label, icon, bg }) => (
+              { key: 'high',   label: 'High',   dot: 'bg-red-400',    bg: 'bg-red-50 border-red-100' },
+              { key: 'medium', label: 'Medium', dot: 'bg-orange-400', bg: 'bg-orange-50 border-orange-100' },
+              { key: 'low',    label: 'Low',    dot: 'bg-gray-300',   bg: 'bg-gray-50 border-gray-100' },
+            ].map(({ key, label, dot, bg }) => (
               <div key={key} className={`flex items-center justify-between px-3 py-2 rounded-lg border ${bg}`}>
-                <span className="text-sm text-gray-700">{icon} {label}</span>
+                <span className="text-sm text-gray-700 flex items-center gap-2"><span className={`inline-block w-2 h-2 rounded-full ${dot}`} />{label}</span>
                 <span className="font-bold text-gray-900 text-lg">{activityPriority[key] ?? 0}</span>
               </div>
             ))}

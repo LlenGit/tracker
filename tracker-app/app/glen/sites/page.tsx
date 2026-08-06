@@ -98,7 +98,7 @@ export default function GlenSitesPage() {
           )
         })}
         {offlineCount > 0 && (
-          <span className="badge bg-red-100 text-red-700 ml-2">⚠ {offlineCount} offline</span>
+          <span className="badge bg-red-100 text-red-700 ml-2">{offlineCount} offline</span>
         )}
       </div>
 
