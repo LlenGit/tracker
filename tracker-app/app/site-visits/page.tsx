@@ -44,7 +44,7 @@ export default function SiteVisitsPage() {
     load()
   }
 
-  const companies = Array.from(new Set(rows.map(r => r.company))).sort()
+  const companies = rows.map(r => r.company).filter((v, i, a) => a.indexOf(v) === i).sort()
   const filtered = filterCompany ? rows.filter(r => r.company === filterCompany) : rows
 
   return (

@@ -44,8 +44,8 @@ export default function GlenPortalsPage() {
     load()
   }
 
-  const companies = Array.from(new Set(rows.map(r => r.company))).sort()
-  const systems = Array.from(new Set(rows.map(r => r.system_name))).sort()
+  const companies = rows.map(r => r.company).filter((v, i, a) => a.indexOf(v) === i).sort()
+  const systems = rows.map(r => r.system_name).filter((v, i, a) => a.indexOf(v) === i).sort()
   const filtered = filterCompany ? rows.filter(r => r.company === filterCompany) : rows
 
   return (
