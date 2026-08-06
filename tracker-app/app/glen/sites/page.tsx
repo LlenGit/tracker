@@ -61,7 +61,7 @@ export default function GlenSitesPage() {
     load()
   }
 
-  const plants = [...new Set(rows.map(r => r.plant_site))].sort()
+  const plants = Array.from(new Set(rows.map(r => r.plant_site))).sort()
   const filtered = rows.filter(r => {
     if (filterPlant && r.plant_site !== filterPlant) return false
     if (filterStatus !== 'all' && r.status !== filterStatus) return false
