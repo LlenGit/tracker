@@ -1,0 +1,4 @@
+id,title,description,category,status,priority,assigned_to,company,due_date,completed_date,notes,tags,created_at
+,Prepare Hindalco Mahan Site Report,Compile visit report with photos and findings,Report,in_progress,high,Ramesh Kumar,Hindalco,2026-08-10,,Include photos from smelter section,hindalco;report,
+,Renew NTPC Dadri Gatepass,Submit gatepass renewal form 15 days before expiry,Admin,open,medium,Suresh Patel,NTPC Ltd,2026-09-01,,Previous gatepass expires Sept 30,ntpc;gatepass,
+,Safety Training – New Engineers,Conduct safety induction for 3 new engineers,Training,open,high,Anil Sharma,,2026-08-15,,Mandatory before first site visit,,
