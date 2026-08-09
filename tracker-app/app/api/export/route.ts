@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin as supabase } from '@/lib/supabase-server'
 
 const TABLES = ['calls', 'messages', 'site_visits', 'activities', 'glen_portals', 'glen_tickets', 'glen_sites'] as const
 type Table = typeof TABLES[number]
