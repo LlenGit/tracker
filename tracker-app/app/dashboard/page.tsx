@@ -1,11 +1,12 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import {
-  Phone, Mail, MapPin, CheckSquare, AlertTriangle,
-  RefreshCw, TrendingUp, Clock, Building2, Loader2,
+  Phone, Mail, MapPin, CheckSquare,
+  RefreshCw, TrendingUp, Building2, Loader2,
   Calendar, ArrowRight, ShieldAlert
 } from 'lucide-react'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Stats {
@@ -103,9 +104,77 @@ export default function DashboardPage() {
     if (isRefresh) setRefreshing(true)
     else setLoading(true)
     try {
-      const res = await fetch(`/api/stats?t=${Date.now()}`, { cache: 'no-store' })
-      const data = await res.json()
-      setStats(data)
+      const today = new Date().toISOString().slice(0, 10)
+      const in14 = new Date(Date.now() + 14 * 864e5).toISOString().slice(0, 10)
+
+      const [
+        { count: callsCount },
+        { count: messagesCount },
+        { count: visitsCount },
+        { count: activitiesCount },
+        { data: recentCalls },
+        { data: recentVisits },
+        { data: recentMessages },
+        { data: activityStatusRows },
+        { data: activityPriorityRows },
+        { data: visitCompanyRows },
+        { data: upcomingActivities },
+        { data: overdueActivities },
+      ] = await Promise.all([
+        supabase.from('calls').select('*', { count: 'exact', head: true }),
+        supabase.from('messages').select('*', { count: 'exact', head: true }),
+        supabase.from('site_visits').select('*', { count: 'exact', head: true }),
+        supabase.from('activities').select('*', { count: 'exact', head: true }),
+        supabase.from('calls').select('id,client_name,company,date,duration_min,engineer_name').order('date', { ascending: false }).limit(5),
+        supabase.from('site_visits').select('id,company,plant_site,visit_date,engineer_name,purpose').order('visit_date', { ascending: false }).limit(5),
+        supabase.from('messages').select('id,type,direction,sender,company,subject,date').order('date', { ascending: false }).limit(5),
+        supabase.from('activities').select('status'),
+        supabase.from('activities').select('priority').neq('status', 'completed').neq('status', 'cancelled'),
+        supabase.from('site_visits').select('company'),
+        supabase.from('activities')
+          .select('id,title,due_date,priority,status,assigned_to,company')
+          .gte('due_date', today).lte('due_date', in14)
+          .not('status', 'in', '("completed","cancelled")')
+          .order('due_date', { ascending: true }).limit(8),
+        supabase.from('activities')
+          .select('id,title,due_date,priority,assigned_to,company')
+          .lt('due_date', today)
+          .not('status', 'in', '("completed","cancelled")')
+          .order('due_date', { ascending: true }).limit(5),
+      ])
+
+      const activityStatus = (activityStatusRows ?? []).reduce((acc: Record<string, number>, r: { status: string }) => {
+        acc[r.status] = (acc[r.status] ?? 0) + 1; return acc
+      }, {})
+
+      const activityPriority = (activityPriorityRows ?? []).reduce((acc: Record<string, number>, r: { priority: string }) => {
+        acc[r.priority] = (acc[r.priority] ?? 0) + 1; return acc
+      }, {})
+
+      const companyCounts = (visitCompanyRows ?? []).reduce((acc: Record<string, number>, r: { company: string }) => {
+        acc[r.company] = (acc[r.company] ?? 0) + 1; return acc
+      }, {})
+      const topCompanies = Object.entries(companyCounts)
+        .sort(([, a], [, b]) => b - a).slice(0, 8)
+        .map(([company, visits]) => ({ company, visits }))
+
+      setStats({
+        counts: {
+          calls:       callsCount ?? 0,
+          messages:    messagesCount ?? 0,
+          site_visits: visitsCount ?? 0,
+          activities:  activitiesCount ?? 0,
+        },
+        activityStatus,
+        activityPriority,
+        topCompanies,
+        recentCalls:        recentCalls ?? [],
+        recentVisits:       recentVisits ?? [],
+        recentMessages:     recentMessages ?? [],
+        upcomingActivities: upcomingActivities ?? [],
+        overdueActivities:  overdueActivities ?? [],
+        generatedAt:        new Date().toISOString(),
+      })
       setLastUpdated(new Date())
     } finally {
       setLoading(false)
