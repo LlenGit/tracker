@@ -1,6 +1,16 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-server'
 
+// Helper: safely extract data from a settled promise result
+function val<T>(r: PromiseSettledResult<{ data: T | null; count?: number | null; error: unknown }>): T {
+  if (r.status === 'fulfilled') return (r.value.data ?? []) as T
+  return [] as unknown as T
+}
+function count(r: PromiseSettledResult<{ data: unknown; count?: number | null; error: unknown }>): number {
+  if (r.status === 'fulfilled') return r.value.count ?? 0
+  return 0
+}
+
 export async function GET() {
   const [
     callsCount,
@@ -15,7 +25,7 @@ export async function GET() {
     visitsByCompany,
     upcomingActivities,
     overdueActivities,
-  ] = await Promise.all([
+  ] = await Promise.allSettled([
     // Counts
     supabase.from('calls').select('*', { count: 'exact', head: true }),
     supabase.from('messages').select('*', { count: 'exact', head: true }),
@@ -62,19 +72,19 @@ export async function GET() {
   ])
 
   // Aggregate status counts
-  const statusCounts = (activityStatuses.data ?? []).reduce((acc, r) => {
+  const statusCounts = (val<{status: string}[]>(activityStatuses)).reduce((acc, r) => {
     acc[r.status] = (acc[r.status] ?? 0) + 1
     return acc
   }, {} as Record<string, number>)
 
   // Aggregate priority counts
-  const priorityCounts = (activityPriorities.data ?? []).reduce((acc, r) => {
+  const priorityCounts = (val<{priority: string}[]>(activityPriorities)).reduce((acc, r) => {
     acc[r.priority] = (acc[r.priority] ?? 0) + 1
     return acc
   }, {} as Record<string, number>)
 
   // Visits per company
-  const companyCounts = (visitsByCompany.data ?? []).reduce((acc, r) => {
+  const companyCounts = (val<{company: string}[]>(visitsByCompany)).reduce((acc, r) => {
     acc[r.company] = (acc[r.company] ?? 0) + 1
     return acc
   }, {} as Record<string, number>)
@@ -85,19 +95,19 @@ export async function GET() {
 
   return NextResponse.json({
     counts: {
-      calls: callsCount.count ?? 0,
-      messages: messagesCount.count ?? 0,
-      site_visits: visitsCount.count ?? 0,
-      activities: activitiesCount.count ?? 0,
+      calls:       count(callsCount),
+      messages:    count(messagesCount),
+      site_visits: count(visitsCount),
+      activities:  count(activitiesCount),
     },
-    activityStatus: statusCounts,
-    activityPriority: priorityCounts,
+    activityStatus:      statusCounts,
+    activityPriority:    priorityCounts,
     topCompanies,
-    recentCalls: recentCalls.data ?? [],
-    recentVisits: recentVisits.data ?? [],
-    recentMessages: recentMessages.data ?? [],
-    upcomingActivities: upcomingActivities.data ?? [],
-    overdueActivities: overdueActivities.data ?? [],
-    generatedAt: new Date().toISOString(),
+    recentCalls:         val(recentCalls),
+    recentVisits:        val(recentVisits),
+    recentMessages:      val(recentMessages),
+    upcomingActivities:  val(upcomingActivities),
+    overdueActivities:   val(overdueActivities),
+    generatedAt:         new Date().toISOString(),
   })
 }
