@@ -39,35 +39,37 @@ export default function Navbar() {
         <div className="flex items-center h-14">
           <span className="font-bold text-lg tracking-tight mr-4">FieldTracker</span>
 
-          {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-1 flex-1">
-            {nav.map(({ href, label, icon: Icon }) => (
-              <Link key={href} href={href} className={linkClass(href)}>
-                <Icon size={15} />{label}
-              </Link>
-            ))}
-            <div className="ml-auto flex items-center gap-1">
-              {isMaster && (
-                <Link href="/admin" className={linkClass('/admin')}>
-                  <ShieldCheck size={15} /> Admin
+          {/* Desktop nav — only shown when logged in */}
+          {user && (
+            <div className="hidden md:flex items-center gap-1 flex-1">
+              {nav.map(({ href, label, icon: Icon }) => (
+                <Link key={href} href={href} className={linkClass(href)}>
+                  <Icon size={15} />{label}
                 </Link>
-              )}
-              {user && (
+              ))}
+              <div className="ml-auto flex items-center gap-1">
+                {isMaster && (
+                  <Link href="/admin" className={linkClass('/admin')}>
+                    <ShieldCheck size={15} /> Admin
+                  </Link>
+                )}
                 <button onClick={handleSignOut} className="flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium text-blue-200 hover:bg-blue-800 hover:text-white transition-colors">
                   <LogOut size={15} /> Sign Out
                 </button>
-              )}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Mobile hamburger */}
-          <button onClick={() => setOpen(v => !v)} className="md:hidden ml-auto p-2 rounded text-blue-200 hover:bg-blue-800">
-            {open ? <X size={20} /> : <Menu size={20} />}
-          </button>
+          {/* Mobile hamburger — only shown when logged in */}
+          {user && (
+            <button onClick={() => setOpen(v => !v)} className="md:hidden ml-auto p-2 rounded text-blue-200 hover:bg-blue-800">
+              {open ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          )}
         </div>
 
         {/* Mobile menu */}
-        {open && (
+        {user && open && (
           <div className="md:hidden pb-3 space-y-1 border-t border-blue-800 pt-2">
             {nav.map(({ href, label, icon: Icon }) => (
               <Link key={href} href={href} onClick={() => setOpen(false)}
@@ -85,11 +87,9 @@ export default function Navbar() {
                 <ShieldCheck size={15} /> Admin
               </Link>
             )}
-            {user && (
-              <button onClick={handleSignOut} className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium w-full text-blue-200 hover:bg-blue-800 hover:text-white transition-colors">
-                <LogOut size={15} /> Sign Out
-              </button>
-            )}
+            <button onClick={handleSignOut} className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium w-full text-blue-200 hover:bg-blue-800 hover:text-white transition-colors">
+              <LogOut size={15} /> Sign Out
+            </button>
           </div>
         )}
       </div>
