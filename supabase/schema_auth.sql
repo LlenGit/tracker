@@ -21,12 +21,12 @@ create policy "users read own profile"
 -- Master admin can read ALL profiles
 create policy "master reads all profiles"
   on profiles for select
-  using (auth.email() = 'thoudamdexter@gmail.com');
+  using (auth.email() = '${NEXT_PUBLIC_MASTER_EMAIL}');
 
 -- Master admin can update any profile (approve / reject)
 create policy "master updates profiles"
   on profiles for update
-  using (auth.email() = 'thoudamdexter@gmail.com');
+  using (auth.email() = '${NEXT_PUBLIC_MASTER_EMAIL}');
 
 -- ─── Auto-create profile on signup ────────────────────────────────────────────
 create or replace function handle_new_user()
@@ -47,8 +47,3 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure handle_new_user();
-
--- ─── Auto-approve the master user ─────────────────────────────────────────────
--- Run this AFTER the master user signs up for the first time:
--- UPDATE profiles SET status = 'approved', role = 'admin'
--- WHERE email = 'thoudamdexter@gmail.com';

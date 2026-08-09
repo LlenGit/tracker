@@ -4,7 +4,6 @@ import { usePathname, useRouter } from 'next/navigation'
 import { Phone, Mail, MapPin, CheckSquare, Search, TrendingUp, Wifi, LogOut, ShieldCheck } from 'lucide-react'
 import { useAuth } from '@/components/AuthProvider'
 
-const MASTER_EMAIL = process.env.NEXT_PUBLIC_MASTER_EMAIL ?? 'thoudamdexter@gmail.com'
 
 const nav = [
   { href: '/dashboard',   label: 'Dashboard',  icon: TrendingUp },
@@ -20,7 +19,7 @@ export default function Navbar() {
   const path    = usePathname()
   const router  = useRouter()
   const { user, signOut } = useAuth()
-  const isMaster = user?.email === MASTER_EMAIL
+  const isMaster = profile?.role === 'admin'
 
   const handleSignOut = async () => {
     await signOut()

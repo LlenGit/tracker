@@ -5,7 +5,6 @@ import { useAuth } from '@/components/AuthProvider'
 import { supabase } from '@/lib/supabase'
 import { Loader2, CheckCircle, XCircle, Clock } from 'lucide-react'
 
-const MASTER_EMAIL = process.env.NEXT_PUBLIC_MASTER_EMAIL ?? 'thoudamdexter@gmail.com'
 
 interface Profile {
   id: string
@@ -29,14 +28,14 @@ export default function AdminPage() {
   const [loading, setLoading]   = useState(true)
   const [updating, setUpdating] = useState<string | null>(null)
 
-  const isMaster = user?.email === MASTER_EMAIL
+  const isMaster = profile?.role === 'admin'
 
   const load = useCallback(async () => {
     setLoading(true)
     const { data } = await supabase
       .from('profiles')
       .select('*')
-      .neq('email', MASTER_EMAIL)
+      .neq('role', 'admin')
       .order('created_at', { ascending: false })
     setProfiles(data ?? [])
     setLoading(false)

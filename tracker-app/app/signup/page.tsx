@@ -1,17 +1,16 @@
 'use client'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Clock } from 'lucide-react'
 
 export default function SignupPage() {
-  const router = useRouter()
   const [fullName, setFullName] = useState('')
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [error, setError]       = useState('')
   const [loading, setLoading]   = useState(false)
+  const [done, setDone]         = useState(false)
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -25,10 +24,32 @@ export default function SignupPage() {
       options: { data: { full_name: fullName } },
     })
 
-    if (authErr) { setError(authErr.message); setLoading(false); return }
-
-    router.push('/pending')
+    setLoading(false)
+    if (authErr) {
+      setError(authErr.message || 'Signup failed. Please try again.')
+      return
+    }
+    setDone(true)
   }
+
+  if (done) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="w-full max-w-sm text-center card space-y-4">
+        <div className="flex justify-center">
+          <div className="w-14 h-14 bg-yellow-100 rounded-full flex items-center justify-center">
+            <Clock size={28} className="text-yellow-600" />
+          </div>
+        </div>
+        <h2 className="text-xl font-bold text-gray-800">Request Submitted</h2>
+        <p className="text-gray-500 text-sm">
+          Your account has been created and is pending approval from the administrator.
+          Once approved, you can sign in with your credentials.
+        </p>
+        <p className="text-xs text-gray-400">Signed up as <span className="font-medium">{email}</span></p>
+        <Link href="/login" className="btn-primary block text-center w-full">Back to Sign In</Link>
+      </div>
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
