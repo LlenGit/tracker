@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-server'
 
+export const dynamic = 'force-dynamic'
+
 // Helper: safely extract data from a settled promise result
 function val<T>(r: PromiseSettledResult<{ data: T | null; count?: number | null; error: unknown }>): T {
   if (r.status === 'fulfilled') return (r.value.data ?? []) as T

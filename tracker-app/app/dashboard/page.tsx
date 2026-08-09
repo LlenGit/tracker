@@ -103,7 +103,7 @@ export default function DashboardPage() {
     if (isRefresh) setRefreshing(true)
     else setLoading(true)
     try {
-      const res = await fetch('/api/stats')
+      const res = await fetch(`/api/stats?t=${Date.now()}`, { cache: 'no-store' })
       const data = await res.json()
       setStats(data)
       setLastUpdated(new Date())
