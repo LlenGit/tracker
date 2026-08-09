@@ -18,7 +18,7 @@ export default function Navbar() {
   return (
     <nav className="bg-blue-900 text-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4 flex items-center gap-1 h-14">
-        <span className="font-bold text-lg mr-6 tracking-tight">📋 FieldTracker</span>
+        <span className="font-bold text-lg mr-6 tracking-tight">FieldTracker</span>
         {nav.map(({ href, label, icon: Icon }) => (
           <Link
             key={href}

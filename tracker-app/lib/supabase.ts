@@ -49,6 +49,11 @@ export interface SiteVisit {
   gatepass_validity?: string
   escort_required?: boolean
   ppe_required?: string
+  // Document categories (per HIL / gatepass process)
+  docs_contractor?: string   // Contractor registration docs
+  docs_workmen?: string      // Workmen profile docs
+  docs_medical?: string      // Medical examination docs
+  docs_safety?: string       // Safety induction docs
   notes?: string
   tags?: string
   created_at?: string
