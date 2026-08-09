@@ -18,7 +18,7 @@ const nav = [
 export default function Navbar() {
   const path    = usePathname()
   const router  = useRouter()
-  const { user, signOut } = useAuth()
+  const { user, profile, signOut } = useAuth()
   const isMaster = profile?.role === 'admin'
 
   const handleSignOut = async () => {
