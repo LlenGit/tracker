@@ -344,7 +344,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent site visits table */}
-      <div className="card p-0 overflow-hidden">
+      <div className="card p-0 overflow-hidden overflow-x-auto">
         <div className="p-5 pb-3 flex items-center justify-between">
           <SectionHeader title="Recent Site Visits" href="/site-visits" />
         </div>

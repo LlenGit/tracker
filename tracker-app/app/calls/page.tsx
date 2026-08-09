@@ -142,7 +142,7 @@ export default function CallsPage() {
         </form>
       )}
 
-      <div className="card p-0 overflow-hidden">
+      <div className="card p-0 overflow-hidden overflow-x-auto">
         {loading ? (
           <div className="flex justify-center py-12"><Loader2 className="animate-spin text-blue-600" size={24} /></div>
         ) : calls.length === 0 ? (

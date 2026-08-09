@@ -154,7 +154,7 @@ export default function GlenTicketsPage() {
         </form>
       )}
 
-      <div className="card p-0 overflow-hidden">
+      <div className="card p-0 overflow-hidden overflow-x-auto">
         {loading ? (
           <div className="flex justify-center py-12"><Loader2 className="animate-spin text-orange-600" size={24} /></div>
         ) : filtered.length === 0 ? (

@@ -206,7 +206,7 @@ export default function GlenHubPage() {
       </div>
 
       {/* Recent tickets table */}
-      <div className="card p-0 overflow-hidden">
+      <div className="card p-0 overflow-hidden overflow-x-auto">
         <div className="p-4 pb-2 flex items-center justify-between">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Recent Tickets</p>
           <Link href="/glen/tickets" className="text-xs text-blue-600 hover:underline">View all →</Link>
