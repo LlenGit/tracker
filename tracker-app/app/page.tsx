@@ -15,27 +15,29 @@ const TABLE_META: Record<TableName, { label: string; icon: React.ElementType; co
   glen_sites: { label: 'GLENS Site', icon: Wind, color: 'bg-teal-100 text-teal-700', href: '/glen/sites' },
 }
 
-function getTitle(table: TableName, record: Record<string, unknown>) {
+function getTitle(table: TableName, record: Record<string, unknown>): string {
   switch (table) {
-    case 'calls': return `${record.client_name} — ${record.company ?? ''}`
-    case 'messages': return record.subject ?? `${record.type} from ${record.sender ?? 'unknown'}`
+    case 'calls':       return `${record.client_name} — ${record.company ?? ''}`
+    case 'messages':    return String(record.subject ?? `${record.type} from ${record.sender ?? 'unknown'}`)
     case 'site_visits': return `${record.company} / ${record.plant_site}`
-    case 'activities': return String(record.title)
+    case 'activities':  return String(record.title)
     case 'glen_portals': return `${record.system_name} — ${record.company}`
     case 'glen_tickets': return String(record.subject)
-    case 'glen_sites': return `${record.location_name} (${record.plant_site})`
+    case 'glen_sites':  return `${record.location_name} (${record.plant_site})`
+    default:            return ''
   }
 }
 
-function getSubtitle(table: TableName, record: Record<string, unknown>) {
+function getSubtitle(table: TableName, record: Record<string, unknown>): string {
   switch (table) {
-    case 'calls': return `Engineer: ${record.engineer_name ?? '—'} | Date: ${record.date} | Duration: ${record.duration_min ?? '?'} min`
-    case 'messages': return `${record.direction} | ${record.sender ?? ''} → ${record.recipient ?? ''} | ${record.date}`
+    case 'calls':       return `Engineer: ${record.engineer_name ?? '—'} | Date: ${record.date} | Duration: ${record.duration_min ?? '?'} min`
+    case 'messages':    return `${record.direction} | ${record.sender ?? ''} → ${record.recipient ?? ''} | ${record.date}`
     case 'site_visits': return `Engineer: ${record.engineer_name} | Date: ${record.visit_date} | Docs: ${record.gatepass_docs ?? '—'}`
-    case 'activities': return `Status: ${record.status} | Priority: ${record.priority} | Assigned: ${record.assigned_to ?? '—'}`
+    case 'activities':  return `Status: ${record.status} | Priority: ${record.priority} | Assigned: ${record.assigned_to ?? '—'}`
     case 'glen_portals': return `${record.login_type ?? ''} | User: ${record.username ?? '—'} | Access: ${record.access_scope ?? '—'}`
     case 'glen_tickets': return `${record.category ?? ''} · ${record.priority ?? ''} · ${record.status} | ${record.date_submitted}`
-    case 'glen_sites': return `${record.station_type ?? ''} | Parameter: ${record.parameter ?? '—'} | Status: ${record.status ?? '—'}`
+    case 'glen_sites':  return `${record.station_type ?? ''} | Parameter: ${record.parameter ?? '—'} | Status: ${record.status ?? '—'}`
+    default:            return ''
   }
 }
 
@@ -162,7 +164,7 @@ export default function DashboardPage() {
                     <p className="text-xs text-gray-500 mt-0.5">
                       {getSubtitle(item.table, item.record)}
                     </p>
-                    {item.record.notes && (
+                    {!!item.record.notes && (
                       <p className="text-xs text-gray-400 mt-1 line-clamp-1 italic">{String(item.record.notes)}</p>
                     )}
                   </div>
