@@ -72,12 +72,12 @@ export default function GlenSitesPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><Wind className="text-teal-600" size={22} /> CAAQMS Monitoring Sites</h1>
           <p className="text-sm text-gray-500 mt-0.5">Ambient & stack monitoring stations — parameters, data loggers, analyzers</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-shrink-0">
           <ExportButton table="glen_sites" label="Export CSV" />
           <button onClick={() => setShowForm(v => !v)} className="btn-primary flex items-center gap-2">
             <Plus size={16} /> Add Station

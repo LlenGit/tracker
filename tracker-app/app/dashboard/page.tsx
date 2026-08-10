@@ -63,14 +63,14 @@ function StatCard({ label, value, icon: Icon, color, href }: {
   label: string; value: number; icon: React.ElementType; color: string; href: string
 }) {
   return (
-    <Link href={href} className="card hover:shadow-md transition-shadow cursor-pointer group">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</p>
+    <Link href={href} className="card hover:shadow-md transition-shadow cursor-pointer group p-4">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide truncate">{label}</p>
           <p className="text-3xl font-bold text-gray-900 mt-1">{value.toLocaleString()}</p>
         </div>
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>
-          <Icon size={22} />
+        <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
+          <Icon size={20} />
         </div>
       </div>
       <div className="flex items-center gap-1 mt-3 text-xs text-gray-400 group-hover:text-blue-600 transition-colors">
@@ -82,10 +82,10 @@ function StatCard({ label, value, icon: Icon, color, href }: {
 
 function SectionHeader({ title, href }: { title: string; href?: string }) {
   return (
-    <div className="flex items-center justify-between mb-3">
+    <div className="flex items-center justify-between mb-3 gap-2">
       <h2 className="font-semibold text-gray-800 text-sm uppercase tracking-wide">{title}</h2>
       {href && (
-        <Link href={href} className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+        <Link href={href} className="text-xs text-blue-600 hover:underline flex items-center gap-1 flex-shrink-0 whitespace-nowrap">
           View all <ArrowRight size={11} />
         </Link>
       )}
@@ -440,10 +440,6 @@ export default function DashboardPage() {
           )}
       </div>
 
-      {/* Footer */}
-      <p className="text-center text-xs text-gray-300 pb-2">
-        FieldTracker · Data from Supabase · Auto-refreshes every 60s
-      </p>
     </div>
   )
 }

@@ -50,12 +50,12 @@ export default function GlenPortalsPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><Key className="text-cyan-600" size={22} /> Portal Logins</h1>
           <p className="text-sm text-gray-500 mt-0.5">G-Lens, iLens, OSPCB RTDAS, IoT Manager credentials</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-shrink-0">
           <ExportButton table="glen_portals" label="Export CSV" />
           <button onClick={() => setShowForm(v => !v)} className="btn-primary flex items-center gap-2">
             <Plus size={16} /> Add Portal

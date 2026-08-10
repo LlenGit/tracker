@@ -89,12 +89,12 @@ export default function CallsPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><Phone className="text-blue-600" size={22} /> Calls</h1>
           <p className="text-sm text-gray-500 mt-0.5">Log client calls, recordings, and notes</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-shrink-0">
           <ExportButton table="calls" />
           <button onClick={() => setShowForm(v => !v)} className="btn-primary flex items-center gap-2">
             <Plus size={16} /> New Call

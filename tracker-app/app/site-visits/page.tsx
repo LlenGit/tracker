@@ -145,12 +145,12 @@ export default function SiteVisitsPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><MapPin className="text-green-600" size={22} /> Site Visits & Gatepasses</h1>
           <p className="text-sm text-gray-500 mt-0.5">Track plant visits, gatepass documents, and engineer history</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-shrink-0">
           <ExportButton table="site_visits" />
           <button onClick={() => setShowForm(v => !v)} className="btn-primary flex items-center gap-2">
             <Plus size={16} /> Log Visit

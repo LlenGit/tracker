@@ -79,23 +79,23 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Hero search */}
-      <div className="bg-gradient-to-br from-blue-900 to-blue-700 rounded-2xl p-8 text-white text-center shadow-lg">
+      <div className="bg-gradient-to-br from-blue-900 to-blue-700 rounded-2xl p-6 sm:p-8 text-white text-center shadow-lg">
         <h1 className="text-3xl font-bold mb-2">FieldTracker</h1>
         <p className="text-blue-200 mb-6 text-sm">Search across calls, messages, site visits & activities</p>
         <form
           onSubmit={e => { e.preventDefault(); search(query) }}
-          className="flex gap-2 max-w-xl mx-auto"
+          className="flex flex-col sm:flex-row gap-2 max-w-xl mx-auto"
         >
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder='Search anything — e.g. "Hindalco", "Ramesh", "gatepass"'
+            placeholder='Search anything — e.g. "Hindalco"'
             className="flex-1 px-4 py-3 rounded-lg text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-white"
           />
           <button
             type="submit"
             disabled={loading}
-            className="bg-white text-blue-700 px-5 py-3 rounded-lg font-semibold text-sm hover:bg-blue-50 transition-colors flex items-center gap-2 disabled:opacity-60"
+            className="bg-white text-blue-700 px-5 py-3 rounded-lg font-semibold text-sm hover:bg-blue-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
           >
             {loading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
             Search
