@@ -2,6 +2,7 @@
 import { useState, useCallback } from 'react'
 import { Search, Phone, Mail, MapPin, CheckSquare, Loader2, ExternalLink, Wifi, Key, TicketCheck, Wind } from 'lucide-react'
 import Link from 'next/link'
+import { apiFetch } from '@/lib/api'
 
 type TableName = 'calls' | 'messages' | 'site_visits' | 'activities' | 'glen_portals' | 'glen_tickets' | 'glen_sites'
 
@@ -62,7 +63,7 @@ export default function DashboardPage() {
     setLoading(true)
     setSearched(true)
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`)
+      const res = await apiFetch(`/api/search?q=${encodeURIComponent(q)}`)
       const json = await res.json()
       setResults(json.results ?? [])
       setCounts(json.counts ?? null)

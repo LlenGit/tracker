@@ -42,8 +42,11 @@ export default function GlenTicketsPage() {
 
   const load = async () => {
     setLoading(true)
-    const res = await apiFetch('/api/glen/tickets')
-    setRows(await res.json())
+    try {
+      const res = await apiFetch('/api/glen/tickets')
+      const data = await res.json()
+      setRows(Array.isArray(data) ? data : [])
+    } catch { setRows([]) }
     setLoading(false)
   }
   useEffect(() => { load() }, [])

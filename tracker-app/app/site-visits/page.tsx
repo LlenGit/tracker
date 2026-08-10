@@ -119,8 +119,11 @@ export default function SiteVisitsPage() {
 
   const load = async () => {
     setLoading(true)
-    const res = await apiFetch('/api/site-visits')
-    setRows(await res.json())
+    try {
+      const res = await apiFetch('/api/site-visits')
+      const data = await res.json()
+      setRows(Array.isArray(data) ? data : [])
+    } catch { setRows([]) }
     setLoading(false)
   }
   useEffect(() => { load() }, [])

@@ -42,8 +42,11 @@ export default function CallsPage() {
 
   const load = async () => {
     setLoading(true)
-    const res = await apiFetch('/api/calls')
-    setCalls(await res.json())
+    try {
+      const res = await apiFetch('/api/calls')
+      const data = await res.json()
+      setCalls(Array.isArray(data) ? data : [])
+    } catch { setCalls([]) }
     setLoading(false)
   }
   useEffect(() => { load() }, [])

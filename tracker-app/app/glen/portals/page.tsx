@@ -22,8 +22,11 @@ export default function GlenPortalsPage() {
 
   const load = async () => {
     setLoading(true)
-    const res = await apiFetch('/api/glen/portals')
-    setRows(await res.json())
+    try {
+      const res = await apiFetch('/api/glen/portals')
+      const data = await res.json()
+      setRows(Array.isArray(data) ? data : [])
+    } catch { setRows([]) }
     setLoading(false)
   }
   useEffect(() => { load() }, [])

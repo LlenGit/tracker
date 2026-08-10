@@ -29,8 +29,11 @@ export default function MessagesPage() {
 
   const load = async () => {
     setLoading(true)
-    const res = await apiFetch('/api/messages')
-    setRows(await res.json())
+    try {
+      const res = await apiFetch('/api/messages')
+      const data = await res.json()
+      setRows(Array.isArray(data) ? data : [])
+    } catch { setRows([]) }
     setLoading(false)
   }
   useEffect(() => { load() }, [])

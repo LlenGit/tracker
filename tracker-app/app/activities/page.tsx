@@ -34,8 +34,11 @@ export default function ActivitiesPage() {
 
   const load = async () => {
     setLoading(true)
-    const res = await apiFetch('/api/activities')
-    setRows(await res.json())
+    try {
+      const res = await apiFetch('/api/activities')
+      const data = await res.json()
+      setRows(Array.isArray(data) ? data : [])
+    } catch { setRows([]) }
     setLoading(false)
   }
   useEffect(() => { load() }, [])
