@@ -1,11 +1,12 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, TicketCheck, Loader2, AlertTriangle } from 'lucide-react'
+import { Plus, Trash2, TicketCheck, Loader2, AlertTriangle, Pencil } from 'lucide-react'
 import ExportButton from '@/components/ExportButton'
+import { apiFetch } from '@/lib/api'
 import type { GlenTicket } from '@/lib/supabase'
 
 const EMPTY: Omit<GlenTicket, 'id' | 'created_at'> = {
-  ticket_id: '', date_submitted: new Date().toISOString().slice(0,10),
+  ticket_id: '', date_submitted: new Date().toISOString().slice(0, 10),
   submitted_by: '', company: '', plant_site: '', category: undefined,
   priority: 'High', status: 'Open', assigned_to: '', subject: '',
   description: '', issue_type: '', resolution_days: undefined, resolved_date: '', notes: '', tags: '',
@@ -25,9 +26,9 @@ const PRIORITY_BADGE: Record<string, string> = {
 }
 
 const ISSUE_TYPES = [
-  'Data Not Upload','Value Mismatch','Device Offline','Data Showing NA',
-  'Power Shutdown','New Site Config','Analyzer Issue','IP Change',
-  'Mobile App Not Work','Server Issue','Data Pushed','Other'
+  'Data Not Upload', 'Value Mismatch', 'Device Offline', 'Data Showing NA',
+  'Power Shutdown', 'New Site Config', 'Analyzer Issue', 'IP Change',
+  'Mobile App Not Work', 'Server Issue', 'Data Pushed', 'Other'
 ]
 
 export default function GlenTicketsPage() {
@@ -35,12 +36,13 @@ export default function GlenTicketsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
+  const [editId, setEditId] = useState<string | null>(null)
   const [form, setForm] = useState({ ...EMPTY })
   const [filterStatus, setFilterStatus] = useState('all')
 
   const load = async () => {
     setLoading(true)
-    const res = await fetch('/api/glen/tickets')
+    const res = await apiFetch('/api/glen/tickets')
     setRows(await res.json())
     setLoading(false)
   }
@@ -48,28 +50,42 @@ export default function GlenTicketsPage() {
 
   const set = (k: string, v: unknown) => setForm(f => ({ ...f, [k]: v }))
 
+  const openNew = () => { setForm({ ...EMPTY }); setEditId(null); setShowForm(true) }
+
+  const openEdit = (r: GlenTicket) => {
+    const { id, created_at, ...fields } = r
+    setForm({ ...EMPTY, ...fields })
+    setEditId(id!)
+    setShowForm(true)
+  }
+
+  const cancel = () => { setShowForm(false); setEditId(null); setForm({ ...EMPTY }) }
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     const payload = { ...form, resolution_days: form.resolution_days ?? null, resolved_date: form.resolved_date || null }
-    await fetch('/api/glen/tickets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+    if (editId) {
+      await apiFetch('/api/glen/tickets', { method: 'PATCH', body: JSON.stringify({ id: editId, ...payload }) })
+    } else {
+      await apiFetch('/api/glen/tickets', { method: 'POST', body: JSON.stringify(payload) })
+    }
     setSaving(false)
-    setShowForm(false)
-    setForm({ ...EMPTY })
+    cancel()
     load()
   }
 
   const updateStatus = async (id: string, status: string) => {
-    await fetch('/api/glen/tickets', {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, status, resolved_date: status === 'Resolved' ? new Date().toISOString().slice(0,10) : null })
+    await apiFetch('/api/glen/tickets', {
+      method: 'PATCH',
+      body: JSON.stringify({ id, status, resolved_date: status === 'Resolved' ? new Date().toISOString().slice(0, 10) : null })
     })
     load()
   }
 
   const del = async (id: string) => {
     if (!confirm('Delete this ticket?')) return
-    await fetch('/api/glen/tickets', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+    await apiFetch('/api/glen/tickets', { method: 'DELETE', body: JSON.stringify({ id }) })
     load()
   }
 
@@ -86,15 +102,14 @@ export default function GlenTicketsPage() {
         </div>
         <div className="flex gap-2 flex-shrink-0">
           <ExportButton table="glen_tickets" label="Export CSV" />
-          <button onClick={() => setShowForm(v => !v)} className="btn-primary flex items-center gap-2">
+          <button onClick={openNew} className="btn-primary flex items-center gap-2">
             <Plus size={16} /> New Ticket
           </button>
         </div>
       </div>
 
-      {/* Status filter tabs */}
       <div className="flex gap-2 flex-wrap">
-        {(['all','Open','In Progress','Resolved','Closed'] as const).map(s => (
+        {(['all', 'Open', 'In Progress', 'Resolved', 'Closed'] as const).map(s => (
           <button key={s} onClick={() => setFilterStatus(s)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors
               ${filterStatus === s ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
@@ -105,7 +120,7 @@ export default function GlenTicketsPage() {
 
       {showForm && (
         <form onSubmit={submit} className="card space-y-4">
-          <h2 className="font-semibold text-gray-800">Log Support Ticket</h2>
+          <h2 className="font-semibold text-gray-800">{editId ? 'Edit Ticket' : 'Log Support Ticket'}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div><label className="label">Ticket ID (SL#)</label><input className="input" placeholder="e.g. SL111538" value={form.ticket_id} onChange={e => set('ticket_id', e.target.value)} /></div>
             <div><label className="label">Date Submitted *</label><input required type="date" className="input" value={form.date_submitted} onChange={e => set('date_submitted', e.target.value)} /></div>
@@ -123,19 +138,19 @@ export default function GlenTicketsPage() {
               <label className="label">Category</label>
               <select className="input" value={form.category ?? ''} onChange={e => set('category', e.target.value || undefined)}>
                 <option value="">Select…</option>
-                {['Hardware','Software','Network','Server Down','Email/Outlook','Other'].map(c=><option key={c}>{c}</option>)}
+                {['Hardware', 'Software', 'Network', 'Server Down', 'Email/Outlook', 'Other'].map(c => <option key={c}>{c}</option>)}
               </select>
             </div>
             <div>
               <label className="label">Priority</label>
               <select className="input" value={form.priority ?? 'High'} onChange={e => set('priority', e.target.value)}>
-                {['Critical','High','Medium','Low'].map(p=><option key={p}>{p}</option>)}
+                {['Critical', 'High', 'Medium', 'Low'].map(p => <option key={p}>{p}</option>)}
               </select>
             </div>
             <div>
               <label className="label">Status</label>
               <select className="input" value={form.status} onChange={e => set('status', e.target.value)}>
-                {['Open','In Progress','Resolved','Closed'].map(s=><option key={s}>{s}</option>)}
+                {['Open', 'In Progress', 'Resolved', 'Closed'].map(s => <option key={s}>{s}</option>)}
               </select>
             </div>
             <div className="md:col-span-2"><label className="label">Subject / Issue *</label><input required className="input" value={form.subject} onChange={e => set('subject', e.target.value)} /></div>
@@ -146,9 +161,9 @@ export default function GlenTicketsPage() {
             <div><label className="label">Notes / Resolution</label><input className="input" value={form.notes} onChange={e => set('notes', e.target.value)} /></div>
           </div>
           <div className="flex gap-2 justify-end">
-            <button type="button" onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
+            <button type="button" onClick={cancel} className="btn-secondary">Cancel</button>
             <button type="submit" disabled={saving} className="btn-primary flex items-center gap-2">
-              {saving && <Loader2 size={14} className="animate-spin" />} Save Ticket
+              {saving && <Loader2 size={14} className="animate-spin" />} {editId ? 'Save Changes' : 'Save Ticket'}
             </button>
           </div>
         </form>
@@ -162,7 +177,7 @@ export default function GlenTicketsPage() {
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr>{['Ticket ID','Date','Subject','Issue Type','Category','Priority','Status','Assigned','Description / Notes',''].map(h=>(
+              <tr>{['Ticket ID', 'Date', 'Subject', 'Issue Type', 'Category', 'Priority', 'Status', 'Assigned', 'Description / Notes', ''].map(h => (
                 <th key={h} className="table-th">{h}</th>
               ))}</tr>
             </thead>
@@ -181,13 +196,16 @@ export default function GlenTicketsPage() {
                   <td className="table-td">
                     <select value={r.status} onChange={e => updateStatus(r.id!, e.target.value)}
                       className={`badge cursor-pointer border-0 ${STATUS_BADGE[r.status]} text-xs font-medium rounded px-2 py-0.5`}>
-                      {['Open','In Progress','Resolved','Closed'].map(s=><option key={s}>{s}</option>)}
+                      {['Open', 'In Progress', 'Resolved', 'Closed'].map(s => <option key={s}>{s}</option>)}
                     </select>
                   </td>
                   <td className="table-td">{r.assigned_to ?? '—'}</td>
                   <td className="table-td max-w-xs text-gray-500 truncate text-xs">{r.description ?? r.notes ?? '—'}</td>
                   <td className="table-td">
-                    <button onClick={() => del(r.id!)} className="text-red-400 hover:text-red-600"><Trash2 size={15} /></button>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => openEdit(r)} className="text-gray-400 hover:text-blue-600 transition-colors" title="Edit"><Pencil size={14} /></button>
+                      <button onClick={() => del(r.id!)} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -1,7 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, MapPin, Loader2, Wind } from 'lucide-react'
+import { Plus, Trash2, Loader2, Wind, Pencil } from 'lucide-react'
 import ExportButton from '@/components/ExportButton'
+import { apiFetch } from '@/lib/api'
 import type { GlenSite } from '@/lib/supabase'
 
 const EMPTY: Omit<GlenSite, 'id' | 'created_at'> = {
@@ -18,20 +19,21 @@ const STATUS_BADGE: Record<string, string> = {
   'Decommissioned':    'bg-gray-100 text-gray-500',
 }
 
-const PARAMETERS = ['PM10','PM2.5','NOx','SO2','CO','SPM','NH3','O3','Pb','H2S','Temp','Humidity','Wind Speed','Wind Direction']
+const PARAMETERS = ['PM10', 'PM2.5', 'NOx', 'SO2', 'CO', 'SPM', 'NH3', 'O3', 'Pb', 'H2S', 'Temp', 'Humidity', 'Wind Speed', 'Wind Direction']
 
 export default function GlenSitesPage() {
   const [rows, setRows] = useState<GlenSite[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
+  const [editId, setEditId] = useState<string | null>(null)
   const [form, setForm] = useState({ ...EMPTY })
   const [filterPlant, setFilterPlant] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
 
   const load = async () => {
     setLoading(true)
-    const res = await fetch('/api/glen/sites')
+    const res = await apiFetch('/api/glen/sites')
     setRows(await res.json())
     setLoading(false)
   }
@@ -39,25 +41,39 @@ export default function GlenSitesPage() {
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
+  const openNew = () => { setForm({ ...EMPTY }); setEditId(null); setShowForm(true) }
+
+  const openEdit = (r: GlenSite) => {
+    const { id, created_at, ...fields } = r
+    setForm({ ...EMPTY, ...fields })
+    setEditId(id!)
+    setShowForm(true)
+  }
+
+  const cancel = () => { setShowForm(false); setEditId(null); setForm({ ...EMPTY }) }
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     const payload = { ...form, commissioned_date: form.commissioned_date || null }
-    await fetch('/api/glen/sites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+    if (editId) {
+      await apiFetch('/api/glen/sites', { method: 'PATCH', body: JSON.stringify({ id: editId, ...payload }) })
+    } else {
+      await apiFetch('/api/glen/sites', { method: 'POST', body: JSON.stringify(payload) })
+    }
     setSaving(false)
-    setShowForm(false)
-    setForm({ ...EMPTY })
+    cancel()
     load()
   }
 
   const updateStatus = async (id: string, status: string) => {
-    await fetch('/api/glen/sites', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status }) })
+    await apiFetch('/api/glen/sites', { method: 'PATCH', body: JSON.stringify({ id, status }) })
     load()
   }
 
   const del = async (id: string) => {
     if (!confirm('Delete this site record?')) return
-    await fetch('/api/glen/sites', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+    await apiFetch('/api/glen/sites', { method: 'DELETE', body: JSON.stringify({ id }) })
     load()
   }
 
@@ -79,13 +95,12 @@ export default function GlenSitesPage() {
         </div>
         <div className="flex gap-2 flex-shrink-0">
           <ExportButton table="glen_sites" label="Export CSV" />
-          <button onClick={() => setShowForm(v => !v)} className="btn-primary flex items-center gap-2">
+          <button onClick={openNew} className="btn-primary flex items-center gap-2">
             <Plus size={16} /> Add Station
           </button>
         </div>
       </div>
 
-      {/* Status summary chips */}
       <div className="flex flex-wrap gap-2 items-center">
         {(['all', 'Active', 'Offline', 'Under Maintenance', 'Decommissioned'] as const).map(s => {
           const cnt = s === 'all' ? rows.length : rows.filter(r => r.status === s).length
@@ -104,7 +119,7 @@ export default function GlenSitesPage() {
 
       {showForm && (
         <form onSubmit={submit} className="card space-y-4">
-          <h2 className="font-semibold text-gray-800">Add Monitoring Station</h2>
+          <h2 className="font-semibold text-gray-800">{editId ? 'Edit Monitoring Station' : 'Add Monitoring Station'}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div><label className="label">Company *</label><input required className="input" value={form.company} onChange={e => set('company', e.target.value)} /></div>
             <div><label className="label">Plant / Site *</label><input required className="input" placeholder="e.g. Tata Steel Meramandali" value={form.plant_site} onChange={e => set('plant_site', e.target.value)} /></div>
@@ -112,12 +127,8 @@ export default function GlenSitesPage() {
             <div>
               <label className="label">Station Type</label>
               <select className="input" value={form.station_type} onChange={e => set('station_type', e.target.value)}>
-                <option>Ambient</option>
-                <option>Stack</option>
-                <option>CEQMS</option>
-                <option>AEL</option>
-                <option>CAAQMS</option>
-                <option>Other</option>
+                <option>Ambient</option><option>Stack</option><option>CEQMS</option>
+                <option>AEL</option><option>CAAQMS</option><option>Other</option>
               </select>
             </div>
             <div><label className="label">Data Logger ID</label><input className="input" value={form.data_logger_id} onChange={e => set('data_logger_id', e.target.value)} /></div>
@@ -136,25 +147,22 @@ export default function GlenSitesPage() {
             <div>
               <label className="label">Status</label>
               <select className="input" value={form.status} onChange={e => set('status', e.target.value)}>
-                <option>Active</option>
-                <option>Offline</option>
-                <option>Under Maintenance</option>
-                <option>Decommissioned</option>
+                <option>Active</option><option>Offline</option>
+                <option>Under Maintenance</option><option>Decommissioned</option>
               </select>
             </div>
             <div><label className="label">Commissioned Date</label><input type="date" className="input" value={form.commissioned_date} onChange={e => set('commissioned_date', e.target.value)} /></div>
             <div className="md:col-span-3"><label className="label">Notes</label><textarea rows={2} className="input" value={form.notes} onChange={e => set('notes', e.target.value)} /></div>
           </div>
           <div className="flex gap-2 justify-end">
-            <button type="button" onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
+            <button type="button" onClick={cancel} className="btn-secondary">Cancel</button>
             <button type="submit" disabled={saving} className="btn-primary flex items-center gap-2">
-              {saving && <Loader2 size={14} className="animate-spin" />} Save Station
+              {saving && <Loader2 size={14} className="animate-spin" />} {editId ? 'Save Changes' : 'Save Station'}
             </button>
           </div>
         </form>
       )}
 
-      {/* Plant filter */}
       {plants.length > 1 && (
         <div className="flex flex-wrap gap-2 items-center">
           <span className="text-xs font-semibold text-gray-400 uppercase">Plant:</span>
@@ -173,7 +181,7 @@ export default function GlenSitesPage() {
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr>{['Location','Company / Plant','Type','Parameter','Data Logger','Analyzer','Make / Model','Signal / IP','Status',''].map(h=>(
+              <tr>{['Location', 'Company / Plant', 'Type', 'Parameter', 'Data Logger', 'Analyzer', 'Make / Model', 'Signal / IP', 'Status', ''].map(h => (
                 <th key={h} className="table-th">{h}</th>
               ))}</tr>
             </thead>
@@ -194,11 +202,14 @@ export default function GlenSitesPage() {
                   <td className="table-td">
                     <select value={r.status ?? 'Active'} onChange={e => updateStatus(r.id!, e.target.value)}
                       className={`badge cursor-pointer border-0 text-xs font-medium rounded px-2 py-0.5 ${STATUS_BADGE[r.status ?? 'Active']}`}>
-                      {['Active','Offline','Under Maintenance','Decommissioned'].map(s=><option key={s}>{s}</option>)}
+                      {['Active', 'Offline', 'Under Maintenance', 'Decommissioned'].map(s => <option key={s}>{s}</option>)}
                     </select>
                   </td>
                   <td className="table-td">
-                    <button onClick={() => del(r.id!)} className="text-red-400 hover:text-red-600"><Trash2 size={15} /></button>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => openEdit(r)} className="text-gray-400 hover:text-blue-600 transition-colors" title="Edit"><Pencil size={14} /></button>
+                      <button onClick={() => del(r.id!)} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
+                    </div>
                   </td>
                 </tr>
               ))}

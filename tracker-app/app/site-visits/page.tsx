@@ -1,11 +1,12 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, MapPin, Loader2, ShieldCheck, ChevronDown, ChevronUp } from 'lucide-react'
+import { Plus, Trash2, MapPin, Loader2, ShieldCheck, ChevronDown, ChevronUp, Pencil } from 'lucide-react'
 import ExportButton from '@/components/ExportButton'
+import { apiFetch } from '@/lib/api'
 import type { SiteVisit } from '@/lib/supabase'
 
 const EMPTY: Omit<SiteVisit, 'id' | 'created_at'> = {
-  company: '', plant_site: '', location: '', visit_date: new Date().toISOString().slice(0,10),
+  company: '', plant_site: '', location: '', visit_date: new Date().toISOString().slice(0, 10),
   engineer_name: '', purpose: '', gatepass_docs: '', gatepass_validity: '',
   escort_required: false, ppe_required: '',
   docs_contractor: '', docs_workmen: '', docs_medical: '', docs_safety: '',
@@ -32,7 +33,7 @@ function DocBadges({ text }: { text?: string }) {
   )
 }
 
-function ExpandableRow({ r, onDelete }: { r: SiteVisit; onDelete: () => void }) {
+function ExpandableRow({ r, onDelete, onEdit }: { r: SiteVisit; onDelete: () => void; onEdit: () => void }) {
   const [open, setOpen] = useState(false)
   const hasDocs = r.docs_contractor || r.docs_workmen || r.docs_medical || r.docs_safety
   return (
@@ -48,14 +49,15 @@ function ExpandableRow({ r, onDelete }: { r: SiteVisit; onDelete: () => void }) 
         <td className="table-td">{r.escort_required ? 'Yes' : 'No'}</td>
         <td className="table-td">
           {hasDocs
-            ? <span className="text-xs text-blue-600 flex items-center gap-1">{open ? <ChevronUp size={12}/> : <ChevronDown size={12}/>} View docs</span>
+            ? <span className="text-xs text-blue-600 flex items-center gap-1">{open ? <ChevronUp size={12} /> : <ChevronDown size={12} />} View docs</span>
             : <span className="text-gray-400 text-xs">—</span>
           }
         </td>
         <td className="table-td" onClick={e => e.stopPropagation()}>
-          <button onClick={onDelete} className="text-red-400 hover:text-red-600 transition-colors">
-            <Trash2 size={15} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={onEdit} className="text-gray-400 hover:text-blue-600 transition-colors" title="Edit"><Pencil size={14} /></button>
+            <button onClick={onDelete} className="text-red-400 hover:text-red-600 transition-colors" title="Delete"><Trash2 size={14} /></button>
+          </div>
         </td>
       </tr>
       {open && hasDocs && (
@@ -111,12 +113,13 @@ export default function SiteVisitsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
+  const [editId, setEditId] = useState<string | null>(null)
   const [form, setForm] = useState({ ...EMPTY })
   const [filterCompany, setFilterCompany] = useState('')
 
   const load = async () => {
     setLoading(true)
-    const res = await fetch('/api/site-visits')
+    const res = await apiFetch('/api/site-visits')
     setRows(await res.json())
     setLoading(false)
   }
@@ -124,19 +127,34 @@ export default function SiteVisitsPage() {
 
   const set = (k: string, v: unknown) => setForm(f => ({ ...f, [k]: v }))
 
+  const openNew = () => { setForm({ ...EMPTY }); setEditId(null); setShowForm(true) }
+
+  const openEdit = (r: SiteVisit) => {
+    const { id, created_at, ...fields } = r
+    setForm({ ...EMPTY, ...fields })
+    setEditId(id!)
+    setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const cancel = () => { setShowForm(false); setEditId(null); setForm({ ...EMPTY }) }
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
-    await fetch('/api/site-visits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+    if (editId) {
+      await apiFetch('/api/site-visits', { method: 'PATCH', body: JSON.stringify({ id: editId, ...form }) })
+    } else {
+      await apiFetch('/api/site-visits', { method: 'POST', body: JSON.stringify(form) })
+    }
     setSaving(false)
-    setShowForm(false)
-    setForm({ ...EMPTY })
+    cancel()
     load()
   }
 
   const del = async (id: string) => {
     if (!confirm('Delete this visit log?')) return
-    await fetch('/api/site-visits', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+    await apiFetch('/api/site-visits', { method: 'DELETE', body: JSON.stringify({ id }) })
     load()
   }
 
@@ -152,7 +170,7 @@ export default function SiteVisitsPage() {
         </div>
         <div className="flex gap-2 flex-shrink-0">
           <ExportButton table="site_visits" />
-          <button onClick={() => setShowForm(v => !v)} className="btn-primary flex items-center gap-2">
+          <button onClick={openNew} className="btn-primary flex items-center gap-2">
             <Plus size={16} /> Log Visit
           </button>
         </div>
@@ -160,9 +178,8 @@ export default function SiteVisitsPage() {
 
       {showForm && (
         <form onSubmit={submit} className="card space-y-5">
-          <h2 className="font-semibold text-gray-800">Log Site Visit</h2>
+          <h2 className="font-semibold text-gray-800">{editId ? 'Edit Site Visit' : 'Log Site Visit'}</h2>
 
-          {/* Basic Info */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div><label className="label">Company *</label><input required className="input" placeholder="e.g. HIL, Hindalco" value={form.company} onChange={e => set('company', e.target.value)} /></div>
             <div><label className="label">Plant / Site *</label><input required className="input" placeholder="e.g. Lapanga, Mahan" value={form.plant_site} onChange={e => set('plant_site', e.target.value)} /></div>
@@ -178,7 +195,6 @@ export default function SiteVisitsPage() {
             </div>
           </div>
 
-          {/* Gatepass Document Categories */}
           <div>
             <p className="text-sm font-semibold text-gray-700 mb-3 border-t pt-4">Gatepass Documents Required <span className="text-gray-400 font-normal">(comma-separated per category)</span></p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -211,9 +227,9 @@ export default function SiteVisitsPage() {
           </div>
 
           <div className="flex gap-2 justify-end">
-            <button type="button" onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
+            <button type="button" onClick={cancel} className="btn-secondary">Cancel</button>
             <button type="submit" disabled={saving} className="btn-primary flex items-center gap-2">
-              {saving && <Loader2 size={14} className="animate-spin" />} Save Visit
+              {saving && <Loader2 size={14} className="animate-spin" />} {editId ? 'Save Changes' : 'Save Visit'}
             </button>
           </div>
         </form>
@@ -235,20 +251,23 @@ export default function SiteVisitsPage() {
         ) : filtered.length === 0 ? (
           <p className="text-center text-gray-400 py-12">No site visits logged yet.</p>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr>
-                {['Date','Company','Plant / Site','Location','Engineer','Purpose','PPE','Escort','Docs',''].map(h => (
-                  <th key={h} className="table-th">{h}</th>
+          <>
+            <table className="w-full text-sm">
+              <thead>
+                <tr>
+                  {['Date', 'Company', 'Plant / Site', 'Location', 'Engineer', 'Purpose', 'PPE', 'Escort', 'Docs', ''].map(h => (
+                    <th key={h} className="table-th">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(r => (
+                  <ExpandableRow key={r.id} r={r} onDelete={() => del(r.id!)} onEdit={() => openEdit(r)} />
                 ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(r => (
-                <ExpandableRow key={r.id} r={r} onDelete={() => del(r.id!)} />
-              ))}
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+            <p className="text-xs text-gray-400 text-center py-2">{rows.length} records total · {filtered.length} shown</p>
+          </>
         )}
       </div>
     </div>

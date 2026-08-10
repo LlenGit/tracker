@@ -1,5 +1,6 @@
 'use client'
 import { Download } from 'lucide-react'
+import { apiFetch } from '@/lib/api'
 
 interface Props {
   table: 'calls' | 'messages' | 'site_visits' | 'activities' | 'glen_portals' | 'glen_tickets' | 'glen_sites'
@@ -8,7 +9,7 @@ interface Props {
 
 export default function ExportButton({ table, label }: Props) {
   const handleExport = async () => {
-    const res = await fetch(`/api/export?table=${table}`)
+    const res = await apiFetch(`/api/export?table=${table}`)
     if (!res.ok) { alert('Export failed'); return }
     const blob = await res.blob()
     const url = URL.createObjectURL(blob)

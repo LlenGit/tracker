@@ -1,7 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, Key, Loader2, Eye, EyeOff, ExternalLink } from 'lucide-react'
+import { Plus, Trash2, Key, Loader2, Eye, EyeOff, ExternalLink, Pencil } from 'lucide-react'
 import ExportButton from '@/components/ExportButton'
+import { apiFetch } from '@/lib/api'
 import type { GlenPortal } from '@/lib/supabase'
 
 const EMPTY: Omit<GlenPortal, 'id' | 'created_at'> = {
@@ -14,13 +15,14 @@ export default function GlenPortalsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
+  const [editId, setEditId] = useState<string | null>(null)
   const [form, setForm] = useState({ ...EMPTY })
   const [showPassFor, setShowPassFor] = useState<string | null>(null)
   const [filterCompany, setFilterCompany] = useState('')
 
   const load = async () => {
     setLoading(true)
-    const res = await fetch('/api/glen/portals')
+    const res = await apiFetch('/api/glen/portals')
     setRows(await res.json())
     setLoading(false)
   }
@@ -28,19 +30,33 @@ export default function GlenPortalsPage() {
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
+  const openNew = () => { setForm({ ...EMPTY }); setEditId(null); setShowForm(true) }
+
+  const openEdit = (r: GlenPortal) => {
+    const { id, created_at, ...fields } = r
+    setForm({ ...EMPTY, ...fields })
+    setEditId(id!)
+    setShowForm(true)
+  }
+
+  const cancel = () => { setShowForm(false); setEditId(null); setForm({ ...EMPTY }) }
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
-    await fetch('/api/glen/portals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+    if (editId) {
+      await apiFetch('/api/glen/portals', { method: 'PATCH', body: JSON.stringify({ id: editId, ...form }) })
+    } else {
+      await apiFetch('/api/glen/portals', { method: 'POST', body: JSON.stringify(form) })
+    }
     setSaving(false)
-    setShowForm(false)
-    setForm({ ...EMPTY })
+    cancel()
     load()
   }
 
   const del = async (id: string) => {
     if (!confirm('Delete this portal entry?')) return
-    await fetch('/api/glen/portals', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+    await apiFetch('/api/glen/portals', { method: 'DELETE', body: JSON.stringify({ id }) })
     load()
   }
 
@@ -57,13 +73,12 @@ export default function GlenPortalsPage() {
         </div>
         <div className="flex gap-2 flex-shrink-0">
           <ExportButton table="glen_portals" label="Export CSV" />
-          <button onClick={() => setShowForm(v => !v)} className="btn-primary flex items-center gap-2">
+          <button onClick={openNew} className="btn-primary flex items-center gap-2">
             <Plus size={16} /> Add Portal
           </button>
         </div>
       </div>
 
-      {/* System chips */}
       {systems.length > 1 && (
         <div className="flex flex-wrap gap-2 items-center">
           <span className="text-xs font-semibold text-gray-400 uppercase">Systems:</span>
@@ -75,18 +90,16 @@ export default function GlenPortalsPage() {
 
       {showForm && (
         <form onSubmit={submit} className="card space-y-4">
-          <h2 className="font-semibold text-gray-800">Add Portal Credential</h2>
+          <h2 className="font-semibold text-gray-800">{editId ? 'Edit Portal Credential' : 'Add Portal Credential'}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div><label className="label">Company *</label><input required className="input" placeholder="e.g. Tata Steel" value={form.company} onChange={e => set('company', e.target.value)} /></div>
             <div><label className="label">Plant / Site</label><input className="input" placeholder="e.g. Meramandali" value={form.plant_site} onChange={e => set('plant_site', e.target.value)} /></div>
-            <div><label className="label">System / Portal *</label>
+            <div>
+              <label className="label">System / Portal *</label>
               <select required className="input" value={form.system_name} onChange={e => set('system_name', e.target.value)}>
                 <option value="">Select…</option>
-                <option>G-Lens</option>
-                <option>TATA BSL iLens</option>
-                <option>OSPCB RTDAS</option>
-                <option>IoT Manager</option>
-                <option>Other</option>
+                <option>G-Lens</option><option>TATA BSL iLens</option>
+                <option>OSPCB RTDAS</option><option>IoT Manager</option><option>Other</option>
               </select>
             </div>
             <div><label className="label">Login Type</label><input className="input" placeholder="Admin / User / Operator" value={form.login_type} onChange={e => set('login_type', e.target.value)} /></div>
@@ -97,15 +110,14 @@ export default function GlenPortalsPage() {
             <div><label className="label">Remark</label><input className="input" value={form.remark} onChange={e => set('remark', e.target.value)} /></div>
           </div>
           <div className="flex gap-2 justify-end">
-            <button type="button" onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
+            <button type="button" onClick={cancel} className="btn-secondary">Cancel</button>
             <button type="submit" disabled={saving} className="btn-primary flex items-center gap-2">
-              {saving && <Loader2 size={14} className="animate-spin" />} Save
+              {saving && <Loader2 size={14} className="animate-spin" />} {editId ? 'Save Changes' : 'Save'}
             </button>
           </div>
         </form>
       )}
 
-      {/* Company filter */}
       {companies.length > 1 && (
         <div className="flex flex-wrap gap-2 items-center">
           <span className="text-xs font-semibold text-gray-400 uppercase">Filter:</span>
@@ -124,7 +136,7 @@ export default function GlenPortalsPage() {
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr>{['#','System','Company / Site','Login Type','URL','Username','Password','Access','Remark',''].map(h=>(
+              <tr>{['#', 'System', 'Company / Site', 'Login Type', 'URL', 'Username', 'Password', 'Access', 'Remark', ''].map(h => (
                 <th key={h} className="table-th">{h}</th>
               ))}</tr>
             </thead>
@@ -159,7 +171,10 @@ export default function GlenPortalsPage() {
                   <td className="table-td text-xs">{r.access_scope ?? '—'}</td>
                   <td className="table-td text-xs text-gray-400">{r.remark ?? '—'}</td>
                   <td className="table-td">
-                    <button onClick={() => del(r.id!)} className="text-red-400 hover:text-red-600"><Trash2 size={15} /></button>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => openEdit(r)} className="text-gray-400 hover:text-blue-600 transition-colors" title="Edit"><Pencil size={14} /></button>
+                      <button onClick={() => del(r.id!)} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
+                    </div>
                   </td>
                 </tr>
               ))}
