@@ -80,7 +80,7 @@ export type SearchResult = {
   record: Call | Message | SiteVisit | Activity
 }
 
-// ─── GLEN Types ────────────────────────────────────────────────────────────
+// ─── GLENS Types ───────────────────────────────────────────────────────────
 
 export interface GlenPortal {
   id?: string

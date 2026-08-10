@@ -12,7 +12,7 @@ const nav = [
   { href: '/messages',    label: 'Messages',    icon: Mail },
   { href: '/site-visits', label: 'Site Visits', icon: MapPin },
   { href: '/activities',  label: 'Activities',  icon: CheckSquare },
-  { href: '/glen',        label: 'GLEN',        icon: Wifi },
+  { href: '/glen',        label: 'GLENS',       icon: Wifi },
 ]
 
 export default function Navbar() {

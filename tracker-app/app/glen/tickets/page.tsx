@@ -82,7 +82,7 @@ export default function GlenTicketsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><TicketCheck className="text-orange-600" size={22} /> Support Tickets</h1>
-          <p className="text-sm text-gray-500 mt-0.5">GLEN system issue tracking — hardware, software, network, server</p>
+          <p className="text-sm text-gray-500 mt-0.5">GLENS system issue tracking — hardware, software, network, server</p>
         </div>
         <div className="flex gap-2">
           <ExportButton table="glen_tickets" label="Export CSV" />

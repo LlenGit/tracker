@@ -6,45 +6,45 @@ import Link from 'next/link'
 type TableName = 'calls' | 'messages' | 'site_visits' | 'activities' | 'glen_portals' | 'glen_tickets' | 'glen_sites'
 
 const TABLE_META: Record<TableName, { label: string; icon: React.ElementType; color: string; href: string }> = {
-  calls:        { label: 'Call',          icon: Phone,       color: 'bg-blue-100 text-blue-700',    href: '/calls' },
-  messages:     { label: 'Message',       icon: Mail,        color: 'bg-purple-100 text-purple-700', href: '/messages' },
-  site_visits:  { label: 'Site Visit',    icon: MapPin,      color: 'bg-green-100 text-green-700',   href: '/site-visits' },
-  activities:   { label: 'Activity',      icon: CheckSquare, color: 'bg-orange-100 text-orange-700', href: '/activities' },
-  glen_portals: { label: 'GLEN Portal',   icon: Key,         color: 'bg-cyan-100 text-cyan-700',     href: '/glen/portals' },
-  glen_tickets: { label: 'GLEN Ticket',   icon: TicketCheck, color: 'bg-orange-100 text-orange-700', href: '/glen/tickets' },
-  glen_sites:   { label: 'GLEN Site',     icon: Wind,        color: 'bg-teal-100 text-teal-700',     href: '/glen/sites' },
+  calls: { label: 'Call', icon: Phone, color: 'bg-blue-100 text-blue-700', href: '/calls' },
+  messages: { label: 'Message', icon: Mail, color: 'bg-purple-100 text-purple-700', href: '/messages' },
+  site_visits: { label: 'Site Visit', icon: MapPin, color: 'bg-green-100 text-green-700', href: '/site-visits' },
+  activities: { label: 'Activity', icon: CheckSquare, color: 'bg-orange-100 text-orange-700', href: '/activities' },
+  glen_portals: { label: 'GLENS Portal', icon: Key, color: 'bg-cyan-100 text-cyan-700', href: '/glen/portals' },
+  glen_tickets: { label: 'GLENS Ticket', icon: TicketCheck, color: 'bg-orange-100 text-orange-700', href: '/glen/tickets' },
+  glen_sites: { label: 'GLENS Site', icon: Wind, color: 'bg-teal-100 text-teal-700', href: '/glen/sites' },
 }
 
 function getTitle(table: TableName, record: Record<string, unknown>) {
   switch (table) {
-    case 'calls':        return `${record.client_name} — ${record.company ?? ''}`
-    case 'messages':     return record.subject ?? `${record.type} from ${record.sender ?? 'unknown'}`
-    case 'site_visits':  return `${record.company} / ${record.plant_site}`
-    case 'activities':   return String(record.title)
+    case 'calls': return `${record.client_name} — ${record.company ?? ''}`
+    case 'messages': return record.subject ?? `${record.type} from ${record.sender ?? 'unknown'}`
+    case 'site_visits': return `${record.company} / ${record.plant_site}`
+    case 'activities': return String(record.title)
     case 'glen_portals': return `${record.system_name} — ${record.company}`
     case 'glen_tickets': return String(record.subject)
-    case 'glen_sites':   return `${record.location_name} (${record.plant_site})`
+    case 'glen_sites': return `${record.location_name} (${record.plant_site})`
   }
 }
 
 function getSubtitle(table: TableName, record: Record<string, unknown>) {
   switch (table) {
-    case 'calls':        return `Engineer: ${record.engineer_name ?? '—'} | Date: ${record.date} | Duration: ${record.duration_min ?? '?'} min`
-    case 'messages':     return `${record.direction} | ${record.sender ?? ''} → ${record.recipient ?? ''} | ${record.date}`
-    case 'site_visits':  return `Engineer: ${record.engineer_name} | Date: ${record.visit_date} | Docs: ${record.gatepass_docs ?? '—'}`
-    case 'activities':   return `Status: ${record.status} | Priority: ${record.priority} | Assigned: ${record.assigned_to ?? '—'}`
+    case 'calls': return `Engineer: ${record.engineer_name ?? '—'} | Date: ${record.date} | Duration: ${record.duration_min ?? '?'} min`
+    case 'messages': return `${record.direction} | ${record.sender ?? ''} → ${record.recipient ?? ''} | ${record.date}`
+    case 'site_visits': return `Engineer: ${record.engineer_name} | Date: ${record.visit_date} | Docs: ${record.gatepass_docs ?? '—'}`
+    case 'activities': return `Status: ${record.status} | Priority: ${record.priority} | Assigned: ${record.assigned_to ?? '—'}`
     case 'glen_portals': return `${record.login_type ?? ''} | User: ${record.username ?? '—'} | Access: ${record.access_scope ?? '—'}`
     case 'glen_tickets': return `${record.category ?? ''} · ${record.priority ?? ''} · ${record.status} | ${record.date_submitted}`
-    case 'glen_sites':   return `${record.station_type ?? ''} | Parameter: ${record.parameter ?? '—'} | Status: ${record.status ?? '—'}`
+    case 'glen_sites': return `${record.station_type ?? ''} | Parameter: ${record.parameter ?? '—'} | Status: ${record.status ?? '—'}`
   }
 }
 
 const STAT_CARDS = [
-  { label: 'Calls',       href: '/calls',       icon: Phone,       bg: 'bg-blue-50',   iconColor: 'text-blue-600' },
-  { label: 'Messages',    href: '/messages',    icon: Mail,        bg: 'bg-purple-50', iconColor: 'text-purple-600' },
-  { label: 'Site Visits', href: '/site-visits', icon: MapPin,      bg: 'bg-green-50',  iconColor: 'text-green-600' },
-  { label: 'Activities',  href: '/activities',  icon: CheckSquare, bg: 'bg-orange-50', iconColor: 'text-orange-600' },
-  { label: 'GLEN',        href: '/glen',        icon: Wifi,        bg: 'bg-cyan-50',   iconColor: 'text-cyan-600' },
+  { label: 'Calls', href: '/calls', icon: Phone, bg: 'bg-blue-50', iconColor: 'text-blue-600' },
+  { label: 'Messages', href: '/messages', icon: Mail, bg: 'bg-purple-50', iconColor: 'text-purple-600' },
+  { label: 'Site Visits', href: '/site-visits', icon: MapPin, bg: 'bg-green-50', iconColor: 'text-green-600' },
+  { label: 'Activities', href: '/activities', icon: CheckSquare, bg: 'bg-orange-50', iconColor: 'text-orange-600' },
+  { label: 'GLENS', href: '/glen', icon: Wifi, bg: 'bg-cyan-50', iconColor: 'text-cyan-600' },
 ]
 
 export default function DashboardPage() {

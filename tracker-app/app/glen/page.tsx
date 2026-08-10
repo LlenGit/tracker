@@ -81,7 +81,7 @@ export default function GlenHubPage() {
 
   if (loading) return (
     <div className="flex justify-center items-center py-32 gap-3">
-      <Loader2 size={28} className="animate-spin text-cyan-600" /><p className="text-gray-500">Loading GLEN data…</p>
+      <Loader2 size={28} className="animate-spin text-cyan-600" /><p className="text-gray-500">Loading GLENS data…</p>
     </div>
   )
 
@@ -97,7 +97,7 @@ export default function GlenHubPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Wifi className="text-cyan-600" size={24} /> GLEN Portal
+            <Wifi className="text-cyan-600" size={24} /> GLENS Portal
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
             G-Lens · iLens · OSPCB RTDAS · IoT Manager
