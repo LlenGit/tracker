@@ -213,9 +213,6 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <TrendingUp className="text-blue-600" size={24} /> Live Dashboard
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            {lastUpdated ? `Updated ${timeAgo(lastUpdated.toISOString())} · auto-refreshes every 60s` : 'Loading…'}
-          </p>
         </div>
         <button
           onClick={() => load(true)}
@@ -246,7 +243,7 @@ export default function DashboardPage() {
       )}
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <StatCard label="Total Calls"   value={counts.calls}        icon={Phone}       color="bg-blue-100 text-blue-600"   href="/calls" />
         <StatCard label="Messages"      value={counts.messages}     icon={Mail}        color="bg-purple-100 text-purple-600" href="/messages" />
         <StatCard label="Site Visits"   value={counts.site_visits}  icon={MapPin}      color="bg-green-100 text-green-600"  href="/site-visits" />
