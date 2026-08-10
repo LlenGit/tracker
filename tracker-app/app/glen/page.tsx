@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Wifi, Key, MapPin, TicketCheck, RefreshCw, Loader2, AlertTriangle, CheckCircle2, Clock, XCircle } from 'lucide-react'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
 
 interface GlenStats {
   totals: { tickets: number; portals: number; sites: number }
@@ -64,8 +65,60 @@ export default function GlenHubPage() {
     if (isRefresh) setRefreshing(true)
     else setLoading(true)
     try {
-      const res = await fetch('/api/glen/stats')
-      setStats(await res.json())
+      const [
+        { count: ticketsCount },
+        { count: portalsCount },
+        { count: sitesCount },
+        { data: ticketStatusRows },
+        { data: ticketCategoryRows },
+        { data: ticketPriorityRows },
+        { data: issueTypeRows },
+        { data: resolvedRows },
+        { data: siteStatusRows },
+        { data: recentTickets },
+      ] = await Promise.all([
+        supabase.from('glen_tickets').select('*', { count: 'exact', head: true }),
+        supabase.from('glen_portals').select('*', { count: 'exact', head: true }),
+        supabase.from('glen_sites').select('*', { count: 'exact', head: true }),
+        supabase.from('glen_tickets').select('status'),
+        supabase.from('glen_tickets').select('category'),
+        supabase.from('glen_tickets').select('priority').not('status', 'in', '("Resolved","Closed")'),
+        supabase.from('glen_tickets').select('issue_type').not('issue_type', 'is', null),
+        supabase.from('glen_tickets').select('resolution_days').eq('status', 'Resolved').not('resolution_days', 'is', null),
+        supabase.from('glen_sites').select('status'),
+        supabase.from('glen_tickets').select('id,ticket_id,date_submitted,subject,category,priority,status,assigned_to,company,plant_site,issue_type').order('date_submitted', { ascending: false }).limit(10),
+      ])
+
+      const ticketStatus = (ticketStatusRows ?? []).reduce((acc: Record<string, number>, r: { status: string }) => {
+        acc[r.status] = (acc[r.status] ?? 0) + 1; return acc
+      }, {})
+      const ticketCategory = (ticketCategoryRows ?? []).reduce((acc: Record<string, number>, r: { category: string | null }) => {
+        if (r.category) acc[r.category] = (acc[r.category] ?? 0) + 1; return acc
+      }, {})
+      const ticketPriority = (ticketPriorityRows ?? []).reduce((acc: Record<string, number>, r: { priority: string | null }) => {
+        if (r.priority) acc[r.priority] = (acc[r.priority] ?? 0) + 1; return acc
+      }, {})
+      const issueTypeCounts = (issueTypeRows ?? []).reduce((acc: Record<string, number>, r: { issue_type: string | null }) => {
+        if (r.issue_type) acc[r.issue_type] = (acc[r.issue_type] ?? 0) + 1; return acc
+      }, {})
+      const topIssueTypes = Object.entries(issueTypeCounts).sort(([,a],[,b]) => b-a).slice(0,8).map(([type, count]) => ({ type, count }))
+      const avgResolutionDays = resolvedRows && resolvedRows.length > 0
+        ? Math.round((resolvedRows as { resolution_days: number }[]).reduce((s, r) => s + r.resolution_days, 0) / resolvedRows.length)
+        : 0
+      const siteStatus = (siteStatusRows ?? []).reduce((acc: Record<string, number>, r: { status: string | null }) => {
+        if (r.status) acc[r.status] = (acc[r.status] ?? 0) + 1; return acc
+      }, {})
+
+      setStats({
+        totals: { tickets: ticketsCount ?? 0, portals: portalsCount ?? 0, sites: sitesCount ?? 0 },
+        ticketStatus,
+        ticketCategory,
+        ticketPriority,
+        topIssueTypes,
+        avgResolutionDays,
+        siteStatus,
+        recentTickets: recentTickets ?? [],
+      })
       setLastUpdated(new Date())
     } finally {
       setLoading(false)
