@@ -1,0 +1,3 @@
+id,type,direction,sender,recipient,company,subject,body_summary,date,engineer_name,tags,created_at
+,email,inbound,john@hindalco.com,ramesh@company.com,Hindalco,Gatepass Approval Request,Requesting gatepass for plant visit on Aug 10,2026-08-06,Ramesh Kumar,hindalco;gatepass,
+,whatsapp,outbound,ramesh@company.com,jane@ntpc.com,NTPC,Site Visit Confirmation,Confirmed arrival at NTPC Dadri on Aug 12 at 9am,2026-08-05,Ramesh Kumar,ntpc;visit,

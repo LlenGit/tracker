@@ -1,0 +1,12 @@
+id,ticket_id,date_submitted,submitted_by,company,plant_site,category,priority,status,assigned_to,subject,description,issue_type,resolution_days,resolved_date,notes,tags,created_at
+,SL111538,2026-06-11,Biken,Tata Steel,TSM Meramandali,Software,Medium,Resolved,Satya,Data Pushed,Data pushed,Data Not Upload,0,2026-06-11,Online Support,glen;tata,
+,SL111477,2026-06-10,Biken,Tata Steel,TSM Meramandali,Hardware,High,Resolved,Satya,Data Not Upload,Stack15_Coke_oven1_Battery1,Data Not Upload,1,2026-06-11,Isolator Problem,glen;tata,
+,SL111390,2026-06-10,Biken,Tata Steel,TSM Meramandali,Software,High,Resolved,Satya,Data Not Upload,SP_2&3_DE_5,Data Not Upload,0,2026-06-10,Change Range,glen;tata,
+,SL111433,2026-06-09,Biken,Tata Steel,TSM Meramandali,Software,High,Resolved,Satya,Data Not Upload,BF_1_Stove_Chimney CO,Data Not Upload,3,2026-06-12,Mapping Problem,glen;tata,
+,SL110686,2026-05-27,Biken,Tata Steel,TSM Meramandali,Software,High,In Progress,Jyothi,Data Send to NIC Server,EQMS_9_IWPH_KURUNTI,Data Not Upload,23,2026-06-19,,glen;tata,
+,SL111102,2026-06-02,Biken,Tata Steel,TSM Meramandali,Other,High,Resolved,Anurag_S,Mobile App Not Work,TSM,Mobile App Not Work,10,2026-06-12,Mobile App Not Work,glen;tata,
+,SL111560,2026-06-12,Biken,Tata Steel,TSM Meramandali,Network,High,Resolved,Satya,Data Showing NA,Stack_19_Bag_filter_of_SMS_2_FES1,Data Showing NA,1,2026-06-13,Restart the dongle,glen;tata,
+,,2026-06-14,Biken,Tata Steel,TSM Meramandali,Hardware,High,Resolved,Biken,Data Showing NA,DRI_DE_4,Data Showing NA,1,2026-06-15,Adam Power supply Issue,glen;tata,
+,,2026-06-15,Biken,Tata Steel,TSM Meramandali,Software,High,Resolved,Glens,Server Issue,Data Not server,Server Issue,,,Server site Issue,glen;tata,
+,,2026-06-20,Biken,Tata Steel,TSM Meramandali,Hardware,High,Resolved,Satya,Data Showing NA,HSM_STACK2,Data Showing NA,0,2026-06-20,ADC1 Channel not working assign in ADC2,glen;tata,
+,,2026-06-18,Biken,Tata Steel,TSM Meramandali,Software,High,Resolved,Biken,Data Showing NA,CAAQMS_04,Data Showing NA,2,2026-06-20,AC NOT WORK,glen;tata,
