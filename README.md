@@ -2,7 +2,7 @@
 
 A full-stack activity and site visit tracker for field engineers. Tracks calls, messages/emails, site visits with gatepass details, and activities — with a searchable web interface deployable to Vercel.
 
----
+----
 
 ## Folder Structure
 
@@ -105,4 +105,4 @@ To look up what's needed for a specific company or plant, use the **Search** on 
 
 1. Save this entire `tracker/` folder to your OneDrive
 2. Use **Export CSV** in the app to download the latest data into `tracker/data/`
-3. Your exports will sync automatically via OneDrive
+3. Your exports will sync automatically via OneDrive.

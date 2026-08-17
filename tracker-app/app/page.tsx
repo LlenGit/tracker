@@ -2,49 +2,52 @@
 import { useState, useCallback } from 'react'
 import { Search, Phone, Mail, MapPin, CheckSquare, Loader2, ExternalLink, Wifi, Key, TicketCheck, Wind } from 'lucide-react'
 import Link from 'next/link'
+import { apiFetch } from '@/lib/api'
 
 type TableName = 'calls' | 'messages' | 'site_visits' | 'activities' | 'glen_portals' | 'glen_tickets' | 'glen_sites'
 
 const TABLE_META: Record<TableName, { label: string; icon: React.ElementType; color: string; href: string }> = {
-  calls:        { label: 'Call',          icon: Phone,       color: 'bg-blue-100 text-blue-700',    href: '/calls' },
-  messages:     { label: 'Message',       icon: Mail,        color: 'bg-purple-100 text-purple-700', href: '/messages' },
-  site_visits:  { label: 'Site Visit',    icon: MapPin,      color: 'bg-green-100 text-green-700',   href: '/site-visits' },
-  activities:   { label: 'Activity',      icon: CheckSquare, color: 'bg-orange-100 text-orange-700', href: '/activities' },
-  glen_portals: { label: 'GLEN Portal',   icon: Key,         color: 'bg-cyan-100 text-cyan-700',     href: '/glen/portals' },
-  glen_tickets: { label: 'GLEN Ticket',   icon: TicketCheck, color: 'bg-orange-100 text-orange-700', href: '/glen/tickets' },
-  glen_sites:   { label: 'GLEN Site',     icon: Wind,        color: 'bg-teal-100 text-teal-700',     href: '/glen/sites' },
+  calls: { label: 'Call', icon: Phone, color: 'bg-blue-100 text-blue-700', href: '/calls' },
+  messages: { label: 'Message', icon: Mail, color: 'bg-purple-100 text-purple-700', href: '/messages' },
+  site_visits: { label: 'Site Visit', icon: MapPin, color: 'bg-green-100 text-green-700', href: '/site-visits' },
+  activities: { label: 'Activity', icon: CheckSquare, color: 'bg-orange-100 text-orange-700', href: '/activities' },
+  glen_portals: { label: 'GLENS Portal', icon: Key, color: 'bg-cyan-100 text-cyan-700', href: '/glen/portals' },
+  glen_tickets: { label: 'GLENS Ticket', icon: TicketCheck, color: 'bg-orange-100 text-orange-700', href: '/glen/tickets' },
+  glen_sites: { label: 'GLENS Site', icon: Wind, color: 'bg-teal-100 text-teal-700', href: '/glen/sites' },
 }
 
-function getTitle(table: TableName, record: Record<string, unknown>) {
+function getTitle(table: TableName, record: Record<string, unknown>): string {
   switch (table) {
-    case 'calls':        return `${record.client_name} — ${record.company ?? ''}`
-    case 'messages':     return record.subject ?? `${record.type} from ${record.sender ?? 'unknown'}`
-    case 'site_visits':  return `${record.company} / ${record.plant_site}`
-    case 'activities':   return String(record.title)
+    case 'calls':       return `${record.client_name} — ${record.company ?? ''}`
+    case 'messages':    return String(record.subject ?? `${record.type} from ${record.sender ?? 'unknown'}`)
+    case 'site_visits': return `${record.company} / ${record.plant_site}`
+    case 'activities':  return String(record.title)
     case 'glen_portals': return `${record.system_name} — ${record.company}`
     case 'glen_tickets': return String(record.subject)
-    case 'glen_sites':   return `${record.location_name} (${record.plant_site})`
+    case 'glen_sites':  return `${record.location_name} (${record.plant_site})`
+    default:            return ''
   }
 }
 
-function getSubtitle(table: TableName, record: Record<string, unknown>) {
+function getSubtitle(table: TableName, record: Record<string, unknown>): string {
   switch (table) {
-    case 'calls':        return `Engineer: ${record.engineer_name ?? '—'} | Date: ${record.date} | Duration: ${record.duration_min ?? '?'} min`
-    case 'messages':     return `${record.direction} | ${record.sender ?? ''} → ${record.recipient ?? ''} | ${record.date}`
-    case 'site_visits':  return `Engineer: ${record.engineer_name} | Date: ${record.visit_date} | Docs: ${record.gatepass_docs ?? '—'}`
-    case 'activities':   return `Status: ${record.status} | Priority: ${record.priority} | Assigned: ${record.assigned_to ?? '—'}`
+    case 'calls':       return `Engineer: ${record.engineer_name ?? '—'} | Date: ${record.date} | Duration: ${record.duration_min ?? '?'} min`
+    case 'messages':    return `${record.direction} | ${record.sender ?? ''} → ${record.recipient ?? ''} | ${record.date}`
+    case 'site_visits': return `Engineer: ${record.engineer_name} | Date: ${record.visit_date} | Docs: ${record.gatepass_docs ?? '—'}`
+    case 'activities':  return `Status: ${record.status} | Priority: ${record.priority} | Assigned: ${record.assigned_to ?? '—'}`
     case 'glen_portals': return `${record.login_type ?? ''} | User: ${record.username ?? '—'} | Access: ${record.access_scope ?? '—'}`
     case 'glen_tickets': return `${record.category ?? ''} · ${record.priority ?? ''} · ${record.status} | ${record.date_submitted}`
-    case 'glen_sites':   return `${record.station_type ?? ''} | Parameter: ${record.parameter ?? '—'} | Status: ${record.status ?? '—'}`
+    case 'glen_sites':  return `${record.station_type ?? ''} | Parameter: ${record.parameter ?? '—'} | Status: ${record.status ?? '—'}`
+    default:            return ''
   }
 }
 
 const STAT_CARDS = [
-  { label: 'Calls',       href: '/calls',       icon: Phone,       bg: 'bg-blue-50',   iconColor: 'text-blue-600' },
-  { label: 'Messages',    href: '/messages',    icon: Mail,        bg: 'bg-purple-50', iconColor: 'text-purple-600' },
-  { label: 'Site Visits', href: '/site-visits', icon: MapPin,      bg: 'bg-green-50',  iconColor: 'text-green-600' },
-  { label: 'Activities',  href: '/activities',  icon: CheckSquare, bg: 'bg-orange-50', iconColor: 'text-orange-600' },
-  { label: 'GLEN',        href: '/glen',        icon: Wifi,        bg: 'bg-cyan-50',   iconColor: 'text-cyan-600' },
+  { label: 'Calls', href: '/calls', icon: Phone, bg: 'bg-blue-50', iconColor: 'text-blue-600' },
+  { label: 'Messages', href: '/messages', icon: Mail, bg: 'bg-purple-50', iconColor: 'text-purple-600' },
+  { label: 'Site Visits', href: '/site-visits', icon: MapPin, bg: 'bg-green-50', iconColor: 'text-green-600' },
+  { label: 'Activities', href: '/activities', icon: CheckSquare, bg: 'bg-orange-50', iconColor: 'text-orange-600' },
+  { label: 'GLENS', href: '/glen', icon: Wifi, bg: 'bg-cyan-50', iconColor: 'text-cyan-600' },
 ]
 
 export default function DashboardPage() {
@@ -60,7 +63,7 @@ export default function DashboardPage() {
     setLoading(true)
     setSearched(true)
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`)
+      const res = await apiFetch(`/api/search?q=${encodeURIComponent(q)}`)
       const json = await res.json()
       setResults(json.results ?? [])
       setCounts(json.counts ?? null)
@@ -77,23 +80,23 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Hero search */}
-      <div className="bg-gradient-to-br from-blue-900 to-blue-700 rounded-2xl p-8 text-white text-center shadow-lg">
+      <div className="bg-gradient-to-br from-blue-900 to-blue-700 rounded-2xl p-6 sm:p-8 text-white text-center shadow-lg">
         <h1 className="text-3xl font-bold mb-2">FieldTracker</h1>
         <p className="text-blue-200 mb-6 text-sm">Search across calls, messages, site visits & activities</p>
         <form
           onSubmit={e => { e.preventDefault(); search(query) }}
-          className="flex gap-2 max-w-xl mx-auto"
+          className="flex flex-col sm:flex-row gap-2 max-w-xl mx-auto"
         >
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder='Search anything — e.g. "Hindalco", "Ramesh", "gatepass"'
+            placeholder='Search anything — e.g. "Hindalco"'
             className="flex-1 px-4 py-3 rounded-lg text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-white"
           />
           <button
             type="submit"
             disabled={loading}
-            className="bg-white text-blue-700 px-5 py-3 rounded-lg font-semibold text-sm hover:bg-blue-50 transition-colors flex items-center gap-2 disabled:opacity-60"
+            className="bg-white text-blue-700 px-5 py-3 rounded-lg font-semibold text-sm hover:bg-blue-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
           >
             {loading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
             Search
@@ -162,7 +165,7 @@ export default function DashboardPage() {
                     <p className="text-xs text-gray-500 mt-0.5">
                       {getSubtitle(item.table, item.record)}
                     </p>
-                    {item.record.notes && (
+                    {!!item.record.notes && (
                       <p className="text-xs text-gray-400 mt-1 line-clamp-1 italic">{String(item.record.notes)}</p>
                     )}
                   </div>

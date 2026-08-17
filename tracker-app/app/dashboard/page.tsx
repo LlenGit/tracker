@@ -1,11 +1,12 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import {
-  Phone, Mail, MapPin, CheckSquare, AlertTriangle,
-  RefreshCw, TrendingUp, Clock, Building2, Loader2,
+  Phone, Mail, MapPin, CheckSquare,
+  RefreshCw, TrendingUp, Building2, Loader2,
   Calendar, ArrowRight, ShieldAlert
 } from 'lucide-react'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Stats {
@@ -62,14 +63,14 @@ function StatCard({ label, value, icon: Icon, color, href }: {
   label: string; value: number; icon: React.ElementType; color: string; href: string
 }) {
   return (
-    <Link href={href} className="card hover:shadow-md transition-shadow cursor-pointer group">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</p>
+    <Link href={href} className="card hover:shadow-md transition-shadow cursor-pointer group p-4">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide truncate">{label}</p>
           <p className="text-3xl font-bold text-gray-900 mt-1">{value.toLocaleString()}</p>
         </div>
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>
-          <Icon size={22} />
+        <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
+          <Icon size={20} />
         </div>
       </div>
       <div className="flex items-center gap-1 mt-3 text-xs text-gray-400 group-hover:text-blue-600 transition-colors">
@@ -81,10 +82,10 @@ function StatCard({ label, value, icon: Icon, color, href }: {
 
 function SectionHeader({ title, href }: { title: string; href?: string }) {
   return (
-    <div className="flex items-center justify-between mb-3">
+    <div className="flex items-center justify-between mb-3 gap-2">
       <h2 className="font-semibold text-gray-800 text-sm uppercase tracking-wide">{title}</h2>
       {href && (
-        <Link href={href} className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+        <Link href={href} className="text-xs text-blue-600 hover:underline flex items-center gap-1 flex-shrink-0 whitespace-nowrap">
           View all <ArrowRight size={11} />
         </Link>
       )}
@@ -103,9 +104,77 @@ export default function DashboardPage() {
     if (isRefresh) setRefreshing(true)
     else setLoading(true)
     try {
-      const res = await fetch('/api/stats')
-      const data = await res.json()
-      setStats(data)
+      const today = new Date().toISOString().slice(0, 10)
+      const in14 = new Date(Date.now() + 14 * 864e5).toISOString().slice(0, 10)
+
+      const [
+        { count: callsCount },
+        { count: messagesCount },
+        { count: visitsCount },
+        { count: activitiesCount },
+        { data: recentCalls },
+        { data: recentVisits },
+        { data: recentMessages },
+        { data: activityStatusRows },
+        { data: activityPriorityRows },
+        { data: visitCompanyRows },
+        { data: upcomingActivities },
+        { data: overdueActivities },
+      ] = await Promise.all([
+        supabase.from('calls').select('*', { count: 'exact', head: true }),
+        supabase.from('messages').select('*', { count: 'exact', head: true }),
+        supabase.from('site_visits').select('*', { count: 'exact', head: true }),
+        supabase.from('activities').select('*', { count: 'exact', head: true }),
+        supabase.from('calls').select('id,client_name,company,date,duration_min,engineer_name').order('date', { ascending: false }).limit(5),
+        supabase.from('site_visits').select('id,company,plant_site,visit_date,engineer_name,purpose').order('visit_date', { ascending: false }).limit(5),
+        supabase.from('messages').select('id,type,direction,sender,company,subject,date').order('date', { ascending: false }).limit(5),
+        supabase.from('activities').select('status'),
+        supabase.from('activities').select('priority').neq('status', 'completed').neq('status', 'cancelled'),
+        supabase.from('site_visits').select('company'),
+        supabase.from('activities')
+          .select('id,title,due_date,priority,status,assigned_to,company')
+          .gte('due_date', today).lte('due_date', in14)
+          .not('status', 'in', '("completed","cancelled")')
+          .order('due_date', { ascending: true }).limit(8),
+        supabase.from('activities')
+          .select('id,title,due_date,priority,assigned_to,company')
+          .lt('due_date', today)
+          .not('status', 'in', '("completed","cancelled")')
+          .order('due_date', { ascending: true }).limit(5),
+      ])
+
+      const activityStatus = (activityStatusRows ?? []).reduce((acc: Record<string, number>, r: { status: string }) => {
+        acc[r.status] = (acc[r.status] ?? 0) + 1; return acc
+      }, {})
+
+      const activityPriority = (activityPriorityRows ?? []).reduce((acc: Record<string, number>, r: { priority: string }) => {
+        acc[r.priority] = (acc[r.priority] ?? 0) + 1; return acc
+      }, {})
+
+      const companyCounts = (visitCompanyRows ?? []).reduce((acc: Record<string, number>, r: { company: string }) => {
+        acc[r.company] = (acc[r.company] ?? 0) + 1; return acc
+      }, {})
+      const topCompanies = Object.entries(companyCounts)
+        .sort(([, a], [, b]) => b - a).slice(0, 8)
+        .map(([company, visits]) => ({ company, visits }))
+
+      setStats({
+        counts: {
+          calls:       callsCount ?? 0,
+          messages:    messagesCount ?? 0,
+          site_visits: visitsCount ?? 0,
+          activities:  activitiesCount ?? 0,
+        },
+        activityStatus,
+        activityPriority,
+        topCompanies,
+        recentCalls:        recentCalls ?? [],
+        recentVisits:       recentVisits ?? [],
+        recentMessages:     recentMessages ?? [],
+        upcomingActivities: upcomingActivities ?? [],
+        overdueActivities:  overdueActivities ?? [],
+        generatedAt:        new Date().toISOString(),
+      })
       setLastUpdated(new Date())
     } finally {
       setLoading(false)
@@ -144,9 +213,6 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <TrendingUp className="text-blue-600" size={24} /> Live Dashboard
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            {lastUpdated ? `Updated ${timeAgo(lastUpdated.toISOString())} · auto-refreshes every 60s` : 'Loading…'}
-          </p>
         </div>
         <button
           onClick={() => load(true)}
@@ -177,7 +243,7 @@ export default function DashboardPage() {
       )}
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <StatCard label="Total Calls"   value={counts.calls}        icon={Phone}       color="bg-blue-100 text-blue-600"   href="/calls" />
         <StatCard label="Messages"      value={counts.messages}     icon={Mail}        color="bg-purple-100 text-purple-600" href="/messages" />
         <StatCard label="Site Visits"   value={counts.site_visits}  icon={MapPin}      color="bg-green-100 text-green-600"  href="/site-visits" />
@@ -344,7 +410,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent site visits table */}
-      <div className="card p-0 overflow-hidden">
+      <div className="card p-0 overflow-hidden overflow-x-auto">
         <div className="p-5 pb-3 flex items-center justify-between">
           <SectionHeader title="Recent Site Visits" href="/site-visits" />
         </div>
@@ -374,10 +440,6 @@ export default function DashboardPage() {
           )}
       </div>
 
-      {/* Footer */}
-      <p className="text-center text-xs text-gray-300 pb-2">
-        FieldTracker · Data from Supabase · Auto-refreshes every 60s
-      </p>
     </div>
   )
 }

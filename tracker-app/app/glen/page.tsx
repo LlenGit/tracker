@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Wifi, Key, MapPin, TicketCheck, RefreshCw, Loader2, AlertTriangle, CheckCircle2, Clock, XCircle } from 'lucide-react'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
 
 interface GlenStats {
   totals: { tickets: number; portals: number; sites: number }
@@ -64,8 +65,60 @@ export default function GlenHubPage() {
     if (isRefresh) setRefreshing(true)
     else setLoading(true)
     try {
-      const res = await fetch('/api/glen/stats')
-      setStats(await res.json())
+      const [
+        { count: ticketsCount },
+        { count: portalsCount },
+        { count: sitesCount },
+        { data: ticketStatusRows },
+        { data: ticketCategoryRows },
+        { data: ticketPriorityRows },
+        { data: issueTypeRows },
+        { data: resolvedRows },
+        { data: siteStatusRows },
+        { data: recentTickets },
+      ] = await Promise.all([
+        supabase.from('glen_tickets').select('*', { count: 'exact', head: true }),
+        supabase.from('glen_portals').select('*', { count: 'exact', head: true }),
+        supabase.from('glen_sites').select('*', { count: 'exact', head: true }),
+        supabase.from('glen_tickets').select('status'),
+        supabase.from('glen_tickets').select('category'),
+        supabase.from('glen_tickets').select('priority').not('status', 'in', '("Resolved","Closed")'),
+        supabase.from('glen_tickets').select('issue_type').not('issue_type', 'is', null),
+        supabase.from('glen_tickets').select('resolution_days').eq('status', 'Resolved').not('resolution_days', 'is', null),
+        supabase.from('glen_sites').select('status'),
+        supabase.from('glen_tickets').select('id,ticket_id,date_submitted,subject,category,priority,status,assigned_to,company,plant_site,issue_type').order('date_submitted', { ascending: false }).limit(10),
+      ])
+
+      const ticketStatus = (ticketStatusRows ?? []).reduce((acc: Record<string, number>, r: { status: string }) => {
+        acc[r.status] = (acc[r.status] ?? 0) + 1; return acc
+      }, {})
+      const ticketCategory = (ticketCategoryRows ?? []).reduce((acc: Record<string, number>, r: { category: string | null }) => {
+        if (r.category) acc[r.category] = (acc[r.category] ?? 0) + 1; return acc
+      }, {})
+      const ticketPriority = (ticketPriorityRows ?? []).reduce((acc: Record<string, number>, r: { priority: string | null }) => {
+        if (r.priority) acc[r.priority] = (acc[r.priority] ?? 0) + 1; return acc
+      }, {})
+      const issueTypeCounts = (issueTypeRows ?? []).reduce((acc: Record<string, number>, r: { issue_type: string | null }) => {
+        if (r.issue_type) acc[r.issue_type] = (acc[r.issue_type] ?? 0) + 1; return acc
+      }, {})
+      const topIssueTypes = Object.entries(issueTypeCounts).sort(([,a],[,b]) => b-a).slice(0,8).map(([type, count]) => ({ type, count }))
+      const avgResolutionDays = resolvedRows && resolvedRows.length > 0
+        ? Math.round((resolvedRows as { resolution_days: number }[]).reduce((s, r) => s + r.resolution_days, 0) / resolvedRows.length)
+        : 0
+      const siteStatus = (siteStatusRows ?? []).reduce((acc: Record<string, number>, r: { status: string | null }) => {
+        if (r.status) acc[r.status] = (acc[r.status] ?? 0) + 1; return acc
+      }, {})
+
+      setStats({
+        totals: { tickets: ticketsCount ?? 0, portals: portalsCount ?? 0, sites: sitesCount ?? 0 },
+        ticketStatus,
+        ticketCategory,
+        ticketPriority,
+        topIssueTypes,
+        avgResolutionDays,
+        siteStatus,
+        recentTickets: recentTickets ?? [],
+      })
       setLastUpdated(new Date())
     } finally {
       setLoading(false)
@@ -81,7 +134,7 @@ export default function GlenHubPage() {
 
   if (loading) return (
     <div className="flex justify-center items-center py-32 gap-3">
-      <Loader2 size={28} className="animate-spin text-cyan-600" /><p className="text-gray-500">Loading GLEN data…</p>
+      <Loader2 size={28} className="animate-spin text-cyan-600" /><p className="text-gray-500">Loading GLENS data…</p>
     </div>
   )
 
@@ -97,12 +150,9 @@ export default function GlenHubPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Wifi className="text-cyan-600" size={24} /> GLEN Portal
+            <Wifi className="text-cyan-600" size={24} /> GLENS Portal
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            G-Lens · iLens · OSPCB RTDAS · IoT Manager
-            {lastUpdated && ` · Updated ${timeAgo(lastUpdated.toISOString())}`}
-          </p>
+          <p className="text-sm text-gray-500 mt-0.5">G-Lens · iLens · OSPCB RTDAS · IoT Manager</p>
         </div>
         <button onClick={() => load(true)} disabled={refreshing}
           className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50">
@@ -122,7 +172,7 @@ export default function GlenHubPage() {
       )}
 
       {/* Quick nav cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         {[
           { href: '/glen/portals', icon: Key,        label: 'Portal Logins', count: s.totals.portals, color: 'bg-cyan-50 text-cyan-700', iconBg: 'bg-cyan-100' },
           { href: '/glen/tickets', icon: TicketCheck, label: 'Support Tickets', count: s.totals.tickets, color: 'bg-orange-50 text-orange-700', iconBg: 'bg-orange-100' },
@@ -206,7 +256,7 @@ export default function GlenHubPage() {
       </div>
 
       {/* Recent tickets table */}
-      <div className="card p-0 overflow-hidden">
+      <div className="card p-0 overflow-hidden overflow-x-auto">
         <div className="p-4 pb-2 flex items-center justify-between">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Recent Tickets</p>
           <Link href="/glen/tickets" className="text-xs text-blue-600 hover:underline">View all →</Link>

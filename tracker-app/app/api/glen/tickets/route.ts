@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin as supabase } from '@/lib/supabase-server'
+import { requireAuth } from '@/lib/require-auth'
 
-export async function GET() {
+export const dynamic = 'force-dynamic'
+
+export async function GET(req: NextRequest) {
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
+
   const { data, error } = await supabase
     .from('glen_tickets')
     .select('*')
@@ -11,6 +17,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
+
   const body = await req.json()
   const { data, error } = await supabase.from('glen_tickets').insert([body]).select()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -18,6 +27,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
+
   const { id, ...updates } = await req.json()
   const { data, error } = await supabase.from('glen_tickets').update(updates).eq('id', id).select()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -25,6 +37,9 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
+
   const { id } = await req.json()
   const { error } = await supabase.from('glen_tickets').delete().eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

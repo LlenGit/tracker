@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin as supabase } from '@/lib/supabase-server'
+import { requireAuth } from '@/lib/require-auth'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
+
   const { searchParams } = new URL(req.url)
   const q = searchParams.get('q')?.trim() ?? ''
 
@@ -26,7 +32,8 @@ export async function GET(req: NextRequest) {
       `title.ilike.${like},description.ilike.${like},category.ilike.${like},assigned_to.ilike.${like},company.ilike.${like},notes.ilike.${like},tags.ilike.${like}`
     ).order('created_at', { ascending: false }).limit(30),
 
-    supabase.from('glen_portals').select('*').or(
+    // Exclude password from portal search results
+    supabase.from('glen_portals').select('id,company,plant_site,system_name,login_type,url,username,access_scope,remark,tags,created_at').or(
       `company.ilike.${like},plant_site.ilike.${like},system_name.ilike.${like},login_type.ilike.${like},username.ilike.${like},access_scope.ilike.${like},remark.ilike.${like}`
     ).order('company').limit(20),
 

@@ -1,12 +1,13 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, Mail, Loader2 } from 'lucide-react'
+import { Plus, Trash2, Mail, Loader2, Pencil } from 'lucide-react'
 import ExportButton from '@/components/ExportButton'
+import { apiFetch } from '@/lib/api'
 import type { Message } from '@/lib/supabase'
 
 const EMPTY: Omit<Message, 'id' | 'created_at'> = {
   type: 'email', direction: 'inbound', sender: '', recipient: '', company: '',
-  subject: '', body_summary: '', date: new Date().toISOString().slice(0,10),
+  subject: '', body_summary: '', date: new Date().toISOString().slice(0, 10),
   engineer_name: '', tags: '',
 }
 
@@ -23,44 +24,62 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
+  const [editId, setEditId] = useState<string | null>(null)
   const [form, setForm] = useState({ ...EMPTY })
 
   const load = async () => {
     setLoading(true)
-    const res = await fetch('/api/messages')
-    setRows(await res.json())
+    try {
+      const res = await apiFetch('/api/messages')
+      const data = await res.json()
+      setRows(Array.isArray(data) ? data : [])
+    } catch { setRows([]) }
     setLoading(false)
   }
   useEffect(() => { load() }, [])
 
   const set = (k: string, v: unknown) => setForm(f => ({ ...f, [k]: v }))
 
+  const openNew = () => { setForm({ ...EMPTY }); setEditId(null); setShowForm(true) }
+
+  const openEdit = (r: Message) => {
+    const { id, created_at, ...fields } = r
+    setForm({ ...EMPTY, ...fields })
+    setEditId(id!)
+    setShowForm(true)
+  }
+
+  const cancel = () => { setShowForm(false); setEditId(null); setForm({ ...EMPTY }) }
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
-    await fetch('/api/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+    if (editId) {
+      await apiFetch('/api/messages', { method: 'PATCH', body: JSON.stringify({ id: editId, ...form }) })
+    } else {
+      await apiFetch('/api/messages', { method: 'POST', body: JSON.stringify(form) })
+    }
     setSaving(false)
-    setShowForm(false)
-    setForm({ ...EMPTY })
+    cancel()
     load()
   }
 
   const del = async (id: string) => {
     if (!confirm('Delete this record?')) return
-    await fetch('/api/messages', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+    await apiFetch('/api/messages', { method: 'DELETE', body: JSON.stringify({ id }) })
     load()
   }
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><Mail className="text-purple-600" size={22} /> Messages & Emails</h1>
           <p className="text-sm text-gray-500 mt-0.5">Track all inbound and outbound communications</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-shrink-0">
           <ExportButton table="messages" />
-          <button onClick={() => setShowForm(v => !v)} className="btn-primary flex items-center gap-2">
+          <button onClick={openNew} className="btn-primary flex items-center gap-2">
             <Plus size={16} /> New Entry
           </button>
         </div>
@@ -68,7 +87,7 @@ export default function MessagesPage() {
 
       {showForm && (
         <form onSubmit={submit} className="card space-y-4">
-          <h2 className="font-semibold text-gray-800">Log Message / Email</h2>
+          <h2 className="font-semibold text-gray-800">{editId ? 'Edit Entry' : 'Log Message / Email'}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="label">Type *</label>
@@ -97,53 +116,57 @@ export default function MessagesPage() {
             <div className="md:col-span-3"><label className="label">Summary / Body</label><textarea rows={3} className="input" value={form.body_summary} onChange={e => set('body_summary', e.target.value)} /></div>
           </div>
           <div className="flex gap-2 justify-end">
-            <button type="button" onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
+            <button type="button" onClick={cancel} className="btn-secondary">Cancel</button>
             <button type="submit" disabled={saving} className="btn-primary flex items-center gap-2">
-              {saving && <Loader2 size={14} className="animate-spin" />} Save
+              {saving && <Loader2 size={14} className="animate-spin" />} {editId ? 'Save Changes' : 'Save'}
             </button>
           </div>
         </form>
       )}
 
-      <div className="card p-0 overflow-hidden">
+      <div className="card p-0 overflow-hidden overflow-x-auto">
         {loading ? (
           <div className="flex justify-center py-12"><Loader2 className="animate-spin text-purple-600" size={24} /></div>
         ) : rows.length === 0 ? (
           <p className="text-center text-gray-400 py-12">No messages logged yet.</p>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr>
-                {['Date','Type','Direction','From','To','Company','Subject','Summary','Engineer',''].map(h => (
-                  <th key={h} className="table-th">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(r => (
-                <tr key={r.id} className="hover:bg-gray-50">
-                  <td className="table-td whitespace-nowrap">{r.date}</td>
-                  <td className="table-td">
-                    <span className={`badge ${TYPE_COLORS[r.type] ?? 'bg-gray-100 text-gray-700'}`}>{r.type}</span>
-                  </td>
-                  <td className="table-td">
-                    <span className={`badge ${r.direction === 'inbound' ? 'bg-teal-100 text-teal-700' : 'bg-orange-100 text-orange-700'}`}>{r.direction}</span>
-                  </td>
-                  <td className="table-td">{r.sender ?? '—'}</td>
-                  <td className="table-td">{r.recipient ?? '—'}</td>
-                  <td className="table-td">{r.company ?? '—'}</td>
-                  <td className="table-td max-w-xs truncate">{r.subject ?? '—'}</td>
-                  <td className="table-td max-w-xs truncate">{r.body_summary ?? '—'}</td>
-                  <td className="table-td">{r.engineer_name ?? '—'}</td>
-                  <td className="table-td">
-                    <button onClick={() => del(r.id!)} className="text-red-400 hover:text-red-600 transition-colors">
-                      <Trash2 size={15} />
-                    </button>
-                  </td>
+          <>
+            <table className="w-full text-sm">
+              <thead>
+                <tr>
+                  {['Date', 'Type', 'Direction', 'From', 'To', 'Company', 'Subject', 'Summary', 'Engineer', ''].map(h => (
+                    <th key={h} className="table-th">{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.map(r => (
+                  <tr key={r.id} className="hover:bg-gray-50">
+                    <td className="table-td whitespace-nowrap">{r.date}</td>
+                    <td className="table-td">
+                      <span className={`badge ${TYPE_COLORS[r.type] ?? 'bg-gray-100 text-gray-700'}`}>{r.type}</span>
+                    </td>
+                    <td className="table-td">
+                      <span className={`badge ${r.direction === 'inbound' ? 'bg-teal-100 text-teal-700' : 'bg-orange-100 text-orange-700'}`}>{r.direction}</span>
+                    </td>
+                    <td className="table-td">{r.sender ?? '—'}</td>
+                    <td className="table-td">{r.recipient ?? '—'}</td>
+                    <td className="table-td">{r.company ?? '—'}</td>
+                    <td className="table-td max-w-xs truncate">{r.subject ?? '—'}</td>
+                    <td className="table-td max-w-xs truncate">{r.body_summary ?? '—'}</td>
+                    <td className="table-td">{r.engineer_name ?? '—'}</td>
+                    <td className="table-td">
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => openEdit(r)} className="text-gray-400 hover:text-blue-600 transition-colors" title="Edit"><Pencil size={14} /></button>
+                        <button onClick={() => del(r.id!)} className="text-red-400 hover:text-red-600 transition-colors" title="Delete"><Trash2 size={14} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="text-xs text-gray-400 text-center py-2">{rows.length} records</p>
+          </>
         )}
       </div>
     </div>

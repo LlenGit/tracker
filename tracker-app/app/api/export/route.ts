@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin as supabase } from '@/lib/supabase-server'
+import { requireAuth } from '@/lib/require-auth'
+
+export const dynamic = 'force-dynamic'
 
 const TABLES = ['calls', 'messages', 'site_visits', 'activities', 'glen_portals', 'glen_tickets', 'glen_sites'] as const
 type Table = typeof TABLES[number]
@@ -13,14 +16,16 @@ function toCSV(rows: Record<string, unknown>[]): string {
       ? `"${s.replace(/"/g, '""')}"`
       : s
   }
-  const lines = [
+  return [
     headers.join(','),
     ...rows.map(row => headers.map(h => escape(row[h])).join(',')),
-  ]
-  return lines.join('\n')
+  ].join('\n')
 }
 
 export async function GET(req: NextRequest) {
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
+
   const { searchParams } = new URL(req.url)
   const table = searchParams.get('table') as Table
 

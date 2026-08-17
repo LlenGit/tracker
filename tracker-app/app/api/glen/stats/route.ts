@@ -1,7 +1,13 @@
-import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { NextRequest, NextResponse } from 'next/server'
+import { supabaseAdmin as supabase } from '@/lib/supabase-server'
+import { requireAuth } from '@/lib/require-auth'
 
-export async function GET() {
+export const dynamic = 'force-dynamic'
+
+export async function GET(req: NextRequest) {
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
+
   const [
     ticketsAll,
     portalsCount,
@@ -19,25 +25,21 @@ export async function GET() {
 
   const tickets = ticketsAll.data ?? []
 
-  // Status counts
   const statusCounts = tickets.reduce((acc, t) => {
     acc[t.status] = (acc[t.status] ?? 0) + 1
     return acc
   }, {} as Record<string, number>)
 
-  // Category counts
   const categoryCounts = tickets.reduce((acc, t) => {
     if (t.category) acc[t.category] = (acc[t.category] ?? 0) + 1
     return acc
   }, {} as Record<string, number>)
 
-  // Priority counts
   const priorityCounts = tickets.reduce((acc, t) => {
     if (t.priority) acc[t.priority] = (acc[t.priority] ?? 0) + 1
     return acc
   }, {} as Record<string, number>)
 
-  // Issue type breakdown
   const issueTypeCounts = tickets.reduce((acc, t) => {
     const k = t.issue_type ?? 'Other'
     acc[k] = (acc[k] ?? 0) + 1
@@ -48,13 +50,11 @@ export async function GET() {
     .slice(0, 8)
     .map(([type, count]) => ({ type, count }))
 
-  // Avg resolution days (resolved only)
   const resolved = tickets.filter(t => t.status === 'Resolved' && t.resolution_days != null)
   const avgResolutionDays = resolved.length
     ? Math.round(resolved.reduce((s, t) => s + (t.resolution_days ?? 0), 0) / resolved.length)
     : 0
 
-  // Sites by status
   const siteStatusCounts = (sitesAll.data ?? []).reduce((acc, s) => {
     const k = s.status ?? 'Active'
     acc[k] = (acc[k] ?? 0) + 1
